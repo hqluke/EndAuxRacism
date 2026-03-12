@@ -511,6 +511,7 @@
     </div>
 
     <div class="header-right">
+        <% if (user) { %>
         <div class="user-pill">
             <% if (user.avatar) { %>
                 <img src="<%= user.avatar %>" alt="<%= user.displayName %>" />
@@ -520,6 +521,9 @@
             <span><%= user.displayName %></span>
         </div>
         <a href="/logout" class="btn-text">log out</a>
+        <% } else { %>
+        <a href="/auth/spotify" class="btn-text" style="color:var(--green);">login with spotify</a>
+        <% } %>
     </div>
 </header>
 
@@ -690,7 +694,7 @@
 <script>
     // ── Server data ───────────────────────────────────────────────────────────
     const allSongs = <%- JSON.stringify(songs || []) %>;
-    const userId   = '<%= user.id %>';
+    const userId   = '<%= user ? user.id : "" %>';
     const roomId   = '<%= roomId %>';
     const isHost   = <%= isHost %>;
 
@@ -973,44 +977,113 @@
 
         item.querySelector('.queue-remove').addEventListener('click', (e) => {
             e.stopPropagation();
-            socket.emit('queue-remove', { roomId, queueType, index });
+            // Read from dataset at click time, not closure
+            const idx = parseInt(item.dataset.index);
+            const qt  = item.dataset.queueType;
+            socket.emit('queue-remove', { roomId, queueType: qt, index: idx });
         });
-
-        // Desktop drag
-        item.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', JSON.stringify({ index, queueType }));
-            setTimeout(() => item.classList.add('dragging'), 0);
-        });
-        item.addEventListener('dragend', () => item.classList.remove('dragging'));
-        item.addEventListener('dragover', (e) => { e.preventDefault(); item.classList.add('drag-over'); });
-        item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
-        item.addEventListener('drop', (e) => {
-            e.preventDefault();
-            item.classList.remove('drag-over');
-            const { index: from, queueType: fromType } = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const to = parseInt(item.dataset.index);
-            if (fromType === item.dataset.queueType && from !== to) {
-                socket.emit('queue-reorder', { roomId, queueType: fromType, fromIndex: from, toIndex: to });
-            }
-        });
-
-        // Mobile touch drag
-        let touchStartY = 0;
-        item.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
-        item.addEventListener('touchend', (e) => {
-            const delta = e.changedTouches[0].clientY - touchStartY;
-            const steps = Math.round(delta / (item.offsetHeight + 2));
-            if (steps !== 0) {
-                socket.emit('queue-reorder', {
-                    roomId, queueType,
-                    fromIndex: index,
-                    toIndex: Math.max(0, index + steps)
-                });
-            }
-        }, { passive: true });
 
         return item;
     }
+
+    // ── Delegated drag & drop on drawer body ─────────────────────────────────
+    // Using a single container listener avoids stale-closure index bugs.
+    let dragSrc = null;
+
+    function initDragOnDrawer() {
+        const body = document.getElementById('drawer-body');
+
+        body.addEventListener('dragstart', (e) => {
+            const item = e.target.closest('.queue-item');
+            if (!item) return;
+            dragSrc = item;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', ''); // Firefox requires this
+            setTimeout(() => item.classList.add('dragging'), 0);
+        });
+
+        body.addEventListener('dragend', () => {
+            document.querySelectorAll('.queue-item.dragging').forEach(el => el.classList.remove('dragging'));
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            dragSrc = null;
+        });
+
+        body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const item = e.target.closest('.queue-item');
+            if (!item || item === dragSrc) return;
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            item.classList.add('drag-over');
+        });
+
+        body.addEventListener('dragleave', (e) => {
+            const item = e.target.closest('.queue-item');
+            if (item) item.classList.remove('drag-over');
+        });
+
+        body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.queue-item');
+            if (!target || !dragSrc || target === dragSrc) return;
+            target.classList.remove('drag-over');
+
+            const fromIndex = parseInt(dragSrc.dataset.index);
+            const fromType  = dragSrc.dataset.queueType;
+            const toIndex   = parseInt(target.dataset.index);
+            const toType    = target.dataset.queueType;
+
+            if (fromType === toType && fromIndex !== toIndex) {
+                socket.emit('queue-reorder', { roomId, queueType: fromType, fromIndex, toIndex });
+            }
+        });
+
+        // ── Touch drag (mobile) ───────────────────────────────────────────────
+        let touchItem   = null;
+        let touchStartY = 0;
+        let touchClone  = null;
+
+        body.addEventListener('touchstart', (e) => {
+            touchItem = e.target.closest('.queue-item');
+            if (!touchItem) return;
+            touchStartY = e.touches[0].clientY;
+            // Visual clone
+            touchClone = touchItem.cloneNode(true);
+            touchClone.style.cssText = `position:fixed;opacity:0.7;pointer-events:none;z-index:999;
+                width:${touchItem.offsetWidth}px;left:${touchItem.getBoundingClientRect().left}px;
+                top:${touchItem.getBoundingClientRect().top}px;`;
+            document.body.appendChild(touchClone);
+            touchItem.classList.add('dragging');
+        }, { passive: true });
+
+        body.addEventListener('touchmove', (e) => {
+            if (!touchClone) return;
+            const dy = e.touches[0].clientY - touchStartY;
+            touchClone.style.top = `${touchItem.getBoundingClientRect().top + dy}px`;
+        }, { passive: true });
+
+        body.addEventListener('touchend', (e) => {
+            if (!touchItem) return;
+            if (touchClone) { touchClone.remove(); touchClone = null; }
+            touchItem.classList.remove('dragging');
+
+            const dy    = e.changedTouches[0].clientY - touchStartY;
+            const steps = Math.round(dy / (touchItem.offsetHeight + 2));
+            if (steps !== 0) {
+                const fromIndex = parseInt(touchItem.dataset.index);
+                const queueType = touchItem.dataset.queueType;
+                const toIndex   = Math.min(
+                    Math.max(0, fromIndex + steps),
+                    queueType === 'manual' ? manualQueue.length - 1 : autoQueue.length - 1
+                );
+                if (fromIndex !== toIndex) {
+                    socket.emit('queue-reorder', { roomId, queueType, fromIndex, toIndex });
+                }
+            }
+            touchItem = null;
+        }, { passive: true });
+    }
+
+    initDragOnDrawer();
 
     // ── Song list render ──────────────────────────────────────────────────────
     function fuzzyScore(str, query) {

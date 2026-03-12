@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jamsesh — Dashboard</title>
+    <title>EndAuxRacism — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
     <style>
@@ -297,7 +297,7 @@
 <body>
 
 <header>
-    <div class="logo">jamsesh</div>
+    <div class="logo">EndAuxRacism</div>
     <div style="display:flex;align-items:center;gap:16px;">
         <div class="user-pill">
             <% if (user.avatar) { %>
@@ -307,7 +307,7 @@
             <% } %>
             <span><%= user.displayName %></span>
         </div>
-        <a href="/room/<%= user.id %>" class="btn-start-room">
+        <a href="/rooms/<%= user.id %>" class="btn-start-room">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
             Start Room
         </a>
@@ -423,8 +423,10 @@
     let currentDuration = 0;
 
     // Local mirror of server queue state
-    let manualQueue = [];
-    let autoQueue   = [];
+    let manualQueue     = [];
+    let autoQueue       = [];
+    let isDragging      = false;
+    let lastAdvancedUri = null;
 
     // For auto-queue refill tracking
     let autoQueueOffset = 50; // we loaded 50 songs; next fetch starts here
@@ -433,24 +435,30 @@
     const socket = io();
 
     socket.on('connect', () => {
+        console.log('[queue] socket connected, joining room:', roomId);
         socket.emit('join-room', roomId);
     });
 
     socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq }) => {
+        if (isDragging) {
+            console.log('[queue] ignoring queue-state during drag');
+            return;
+        }
+        console.log('[queue] queue-state received — manual:', mq.length, 'auto:', aq.length);
         manualQueue = mq;
         autoQueue   = aq;
         renderQueue();
     });
 
     // Another user (or this user on another device) triggered a track
-    socket.on('play-track', (uri) => {
-        playSong(uri, false); // false = don't re-emit queue-advance
+    socket.on('play-track', (song) => {
+        playSong(song.uri, false);
     });
 
     // ── Spotify Web Playback SDK ──────────────────────────────────────────────
     window.onSpotifyWebPlaybackSDKReady = async () => {
         player = new Spotify.Player({
-            name: 'Jamsesh Player',
+            name: 'EndAuxRacism Player',
             getOAuthToken: async (cb) => {
                 const res  = await fetch('/spotify/token');
                 const data = await res.json();
@@ -491,7 +499,13 @@
 
             // Detect natural track end → advance queue
             if (state.paused && state.position === 0 && prevUri && prevUri !== track.uri) {
-                socket.emit('queue-advance', { roomId });
+                if (lastAdvancedUri !== prevUri) {
+                    lastAdvancedUri = prevUri;
+                    console.log('[queue] track ended, advancing from:', prevUri);
+                    socket.emit('queue-advance', { roomId });
+                } else {
+                    console.log('[queue] queue-advance suppressed (already fired for this track)');
+                }
             }
 
             // Refill auto queue when it gets low
@@ -510,7 +524,9 @@
     // ── Controls ──────────────────────────────────────────────────────────────
     document.getElementById('btn-play-pause').addEventListener('click', () => player?.togglePlay());
     document.getElementById('btn-prev').addEventListener('click',       () => player?.previousTrack());
-    document.getElementById('btn-next').addEventListener('click',       () => {
+    document.getElementById('btn-next').addEventListener('click', () => {
+        lastAdvancedUri = currentTrackUri;
+        console.log('[queue] next button pressed, advancing queue');
         socket.emit('queue-advance', { roomId });
     });
 
@@ -540,41 +556,51 @@
 
     // ── Play a track ──────────────────────────────────────────────────────────
     async function playSong(trackUri, setAutoFromHere = true) {
+        console.log('[queue] playSong called — uri:', trackUri, 'setAuto:', setAutoFromHere);
         if (!deviceId) return alert('Player not ready yet — give it a moment');
 
-        await fetch('/spotify/play', {
+        const res = await fetch('/spotify/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trackUri, deviceId }),
         });
+        console.log('[queue] /spotify/play response status:', res.status);
 
         currentTrackUri = trackUri;
 
         if (setAutoFromHere) {
-            // Load songs from this track's position forward into auto queue
             const idx   = allSongs.findIndex(s => s.uri === trackUri);
             const after = idx >= 0 ? allSongs.slice(idx + 1) : allSongs;
-            socket.emit('queue-set-auto', { roomId, songs: after.slice(0, 30) });
+            const batch = after.slice(0, 30);
+            console.log('[queue] queue-set-auto emitting', batch.length, 'songs, starting at index', idx + 1);
+            socket.emit('queue-set-auto', { roomId, songs: batch });
         }
     }
 
     // ── Queue a song ──────────────────────────────────────────────────────────
     function queueSong(song) {
+        console.log('[queue] queue-add emitting:', song.name);
         socket.emit('queue-add', { roomId, song });
         showToast(`"${song.name}" added to queue`);
     }
 
     // ── Fetch more songs for auto queue ───────────────────────────────────────
     async function fetchMoreSongs() {
+        console.log('[queue] fetchMoreSongs — offset:', autoQueueOffset);
         try {
             const res   = await fetch(`/spotify/liked?offset=${autoQueueOffset}&limit=20`);
+            if (!res.ok) {
+                console.warn('[queue] fetchMoreSongs got non-OK status:', res.status, '— /spotify/liked route may not exist yet');
+                return;
+            }
             const songs = await res.json();
+            console.log('[queue] fetchMoreSongs got', songs.length, 'songs');
             if (songs.length > 0) {
                 autoQueueOffset += songs.length;
                 socket.emit('queue-replenish', { roomId, songs });
             }
         } catch (e) {
-            console.warn('Could not fetch more songs:', e);
+            console.warn('[queue] fetchMoreSongs error:', e);
         }
     }
 
@@ -668,72 +694,156 @@
             </button>
         `;
 
-        // Remove button
+        // Remove — read dataset at click time
         item.querySelector('.btn-remove-queue').addEventListener('click', (e) => {
             e.stopPropagation();
-            socket.emit('queue-remove', { roomId, queueType, index });
+            socket.emit('queue-remove', {
+                roomId,
+                queueType: item.dataset.queueType,
+                index: parseInt(item.dataset.index),
+            });
         });
-
-        // ── Desktop drag & drop ───────────────────────────────────────────────
-        item.addEventListener('dragstart', (e) => {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', JSON.stringify({ index, queueType }));
-            setTimeout(() => item.classList.add('dragging'), 0);
-        });
-
-        item.addEventListener('dragend', () => item.classList.remove('dragging'));
-
-        item.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            item.classList.add('drag-over');
-        });
-
-        item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
-
-        item.addEventListener('drop', (e) => {
-            e.preventDefault();
-            item.classList.remove('drag-over');
-            const { index: fromIndex, queueType: fromType } = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const toIndex = parseInt(item.dataset.index);
-            const toType  = item.dataset.queueType;
-            if (fromType === toType && fromIndex !== toIndex) {
-                socket.emit('queue-reorder', { roomId, queueType: fromType, fromIndex, toIndex });
-            }
-        });
-
-        // ── Mobile touch drag ─────────────────────────────────────────────────
-        let touchStartY  = 0;
-        let touchFromIdx = 0;
-        let touchType    = '';
-
-        item.addEventListener('touchstart', (e) => {
-            touchStartY  = e.touches[0].clientY;
-            touchFromIdx = index;
-            touchType    = queueType;
-            item.classList.add('dragging');
-        }, { passive: true });
-
-        item.addEventListener('touchmove', (e) => {
-            // Visual feedback: move item slightly with finger
-            const dy = e.touches[0].clientY - touchStartY;
-            item.style.transform = `translateY(${dy}px)`;
-        }, { passive: true });
-
-        item.addEventListener('touchend', (e) => {
-            item.classList.remove('dragging');
-            item.style.transform = '';
-            const deltaY = e.changedTouches[0].clientY - touchStartY;
-            const itemH  = item.offsetHeight + 2;
-            const steps  = Math.round(deltaY / itemH);
-            if (steps !== 0) {
-                const toIdx = Math.max(0, Math.min(touchFromIdx + steps,
-                    (touchType === 'manual' ? manualQueue : autoQueue).length - 1));
-                socket.emit('queue-reorder', { roomId, queueType: touchType, fromIndex: touchFromIdx, toIndex: toIdx });
-            }
-        }, { passive: true });
 
         return item;
     }
+
+    // ── Drag & drop ───────────────────────────────────────────────────────────
+    let dragSrc      = null;
+    let dragOverItem = null;
+
+    function reorderQueue(queueType, fromIndex, toIndex) {
+        if (fromIndex === toIndex) return;
+        console.log('[drag] reorderQueue — type:', queueType, 'from:', fromIndex, 'to:', toIndex);
+        const arr  = queueType === 'manual' ? manualQueue : autoQueue;
+        const copy = [...arr];
+        const [moved] = copy.splice(fromIndex, 1);
+        copy.splice(toIndex, 0, moved);
+        if (queueType === 'manual') manualQueue = copy;
+        else autoQueue = copy;
+        renderQueue();
+        socket.emit('queue-reorder', { roomId, queueType, fromIndex, toIndex });
+        console.log('[drag] queue-reorder emitted');
+    }
+
+    function initDragOnDrawer() {
+        const body = document.getElementById('drawer-body');
+
+        body.addEventListener('dragstart', (e) => {
+            const item = e.target.closest('.queue-item');
+            if (!item) return;
+            dragSrc    = item;
+            isDragging = true;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+            setTimeout(() => item.classList.add('dragging'), 0);
+            console.log('[drag] dragstart — index:', item.dataset.index, 'type:', item.dataset.queueType);
+        });
+
+        body.addEventListener('dragend', () => {
+            console.log('[drag] dragend');
+            document.querySelectorAll('.queue-item.dragging').forEach(el => el.classList.remove('dragging'));
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            dragSrc      = null;
+            dragOverItem = null;
+            isDragging   = false; // always clear here too, covers cancelled/escaped drags
+        });
+
+        body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const item = e.target.closest('.queue-item');
+            if (!item || item === dragSrc) return;
+            if (item !== dragOverItem) {
+                if (dragOverItem) dragOverItem.classList.remove('drag-over');
+                item.classList.add('drag-over');
+                dragOverItem = item;
+            }
+        });
+
+        body.addEventListener('dragleave', (e) => {
+            const item = e.target.closest('.queue-item');
+            if (!item) return;
+            if (item.contains(e.relatedTarget)) return;
+            item.classList.remove('drag-over');
+            if (dragOverItem === item) dragOverItem = null;
+        });
+
+        body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.queue-item');
+            if (!target || !dragSrc || target === dragSrc) {
+                console.log('[drag] drop ignored — target:', !!target, 'dragSrc:', !!dragSrc, 'same:', target === dragSrc);
+                isDragging = false;
+                return;
+            }
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            dragOverItem = null;
+            isDragging = false; // clear immediately so queue-state updates aren't blocked
+
+            const fromIndex = parseInt(dragSrc.dataset.index);
+            const fromType  = dragSrc.dataset.queueType;
+            const toIndex   = parseInt(target.dataset.index);
+            const toType    = target.dataset.queueType;
+
+            console.log('[drag] drop — from:', fromIndex, '(', fromType, ') to:', toIndex, '(', toType, ')');
+
+            if (fromType !== toType) {
+                console.log('[drag] drop skipped — cross-queue drag not supported');
+                return;
+            }
+            reorderQueue(fromType, fromIndex, toIndex);
+        });
+
+        // ── Touch drag (mobile) ───────────────────────────────────────────────
+        let touchItem   = null;
+        let touchStartY = 0;
+        let touchClone  = null;
+
+        body.addEventListener('touchstart', (e) => {
+            touchItem = e.target.closest('.queue-item');
+            if (!touchItem) return;
+            touchStartY = e.touches[0].clientY;
+            touchClone  = touchItem.cloneNode(true);
+            touchClone.style.cssText = `position:fixed;opacity:0.7;pointer-events:none;z-index:999;
+                width:${touchItem.offsetWidth}px;left:${touchItem.getBoundingClientRect().left}px;
+                top:${touchItem.getBoundingClientRect().top}px;background:var(--surface2);border-radius:6px;`;
+            document.body.appendChild(touchClone);
+            touchItem.classList.add('dragging');
+            isDragging = true;
+        }, { passive: true });
+
+        body.addEventListener('touchmove', (e) => {
+            if (!touchClone) return;
+            const dy = e.touches[0].clientY - touchStartY;
+            touchClone.style.top = `${touchItem.getBoundingClientRect().top + dy}px`;
+        }, { passive: true });
+
+        body.addEventListener('touchend', (e) => {
+            if (!touchItem) return;
+            if (touchClone) { touchClone.remove(); touchClone = null; }
+            touchItem.classList.remove('dragging');
+
+            const touch     = e.changedTouches[0];
+            const fromIndex = parseInt(touchItem.dataset.index);
+            const queueType = touchItem.dataset.queueType;
+
+            const siblings = [...document.querySelectorAll(`.queue-item[data-queue-type="${queueType}"]`)]
+                .filter(el => el !== touchItem);
+            const target = siblings.find(el => {
+                const r = el.getBoundingClientRect();
+                return touch.clientY >= r.top && touch.clientY <= r.bottom;
+            });
+
+            console.log('[drag] touchend — from:', fromIndex, 'target found:', !!target);
+            if (target) {
+                reorderQueue(queueType, fromIndex, parseInt(target.dataset.index));
+            }
+            touchItem  = null;
+            isDragging = false;
+        }, { passive: true });
+    }
+
+    initDragOnDrawer();
 
     // ── Update now-playing in drawer when track changes ───────────────────────
     function updateQueueNowPlaying() {

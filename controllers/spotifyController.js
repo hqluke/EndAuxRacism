@@ -47,7 +47,12 @@ const getDashboard = async (req, res, next) => {
 
 // Return the access token for the Spotify Web Playback SDK
 const getToken = (req, res) => {
-    console.log('Token requested, user:', req.user?.id, 'token exists:', !!req.user?.accessToken);
+    console.log(
+        "Token requested, user:",
+        req.user?.id,
+        "token exists:",
+        !!req.user?.accessToken,
+    );
     res.json({ accessToken: req.user.accessToken });
 };
 
@@ -115,4 +120,34 @@ function msToMinSec(ms) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-module.exports = { getDashboard, getToken, playTrack, addToQueue };
+const getLikedSongs = async (req, res, next) => {
+    try {
+        const { offset = 0, limit = 20 } = req.query;
+        const response = await fetch(
+            `https://api.spotify.com/v1/me/tracks?offset=${offset}&limit=${limit}`,
+            { headers: { Authorization: `Bearer ${req.user.accessToken}` } },
+        );
+        const data = await response.json();
+        const songs = data.items.map((item) => ({
+            id: item.track.id,
+            uri: item.track.uri,
+            name: item.track.name,
+            artist: item.track.artists.map((a) => a.name).join(", "),
+            album: item.track.album.name,
+            image:
+                item.track.album.images[1]?.url ||
+                item.track.album.images[0]?.url,
+        }));
+        res.json(songs);
+    } catch (err) {
+        next(err);
+    }
+};
+
+module.exports = {
+    getDashboard,
+    getToken,
+    playTrack,
+    addToQueue,
+    getLikedSongs,
+};

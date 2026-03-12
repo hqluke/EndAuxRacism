@@ -34,14 +34,16 @@ function addToManualQueue(roomId, song) {
 
 function removeFromQueue(roomId, queueType, index) {
     const room = ensureRoom(roomId);
-    if (room[queueType]) {
-        room[queueType].splice(index, 1);
+    const key = queueType === "manual" ? "manualQueue" : "autoQueue";
+    if (room[key]) {
+        room[key].splice(index, 1);
     }
 }
 
 function reorderQueue(roomId, queueType, fromIndex, toIndex) {
     const room = ensureRoom(roomId);
-    const queue = room[queueType];
+    const key = queueType === "manual" ? "manualQueue" : "autoQueue";
+    const queue = room[key];
     if (!queue) return;
     const [item] = queue.splice(fromIndex, 1);
     queue.splice(toIndex, 0, item);

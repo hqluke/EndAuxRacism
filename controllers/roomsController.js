@@ -1,34 +1,37 @@
 const getRoom = async (req, res, next) => {
     try {
         const { roomId } = req.params;
-        const accessToken = req.user.accessToken;
+        const isAuthenticated = req.isAuthenticated();
+        const isHost = isAuthenticated && req.user.id === roomId;
 
-        // Fetch the user's liked songs to populate the song browser in the room
-        const response = await fetch(
-            "https://api.spotify.com/v1/me/tracks?limit=50",
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
+        let songs = [];
 
-        if (!response.ok) {
-            throw new Error(`Spotify API error: ${response.status}`);
+        // Only fetch Spotify songs if the user is logged in
+        if (isAuthenticated) {
+            const accessToken = req.user.accessToken;
+            const response = await fetch(
+                "https://api.spotify.com/v1/me/tracks?limit=50",
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                songs = data.items.map((item) => ({
+                    id:       item.track.id,
+                    uri:      item.track.uri,
+                    name:     item.track.name,
+                    artist:   item.track.artists.map((a) => a.name).join(", "),
+                    album:    item.track.album.name,
+                    image:    item.track.album.images[1]?.url || item.track.album.images[0]?.url || null,
+                    duration: msToMinSec(item.track.duration_ms),
+                }));
+            }
         }
 
-        const data = await response.json();
-
-        const songs = data.items.map((item) => ({
-            id:       item.track.id,
-            uri:      item.track.uri,
-            name:     item.track.name,
-            artist:   item.track.artists.map((a) => a.name).join(", "),
-            album:    item.track.album.name,
-            image:    item.track.album.images[1]?.url || item.track.album.images[0]?.url || null,
-            duration: msToMinSec(item.track.duration_ms),
-        }));
-
         res.render("room", {
-            user:   req.user,
+            user:   req.user || null,
             roomId,
-            isHost: req.user.id === roomId,
+            isHost,
             songs,
         });
     } catch (err) {

@@ -7,7 +7,6 @@ const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
 const roomManager = require("./roomManager");
-const roomsRouter = require("./routes/roomsRouter");
 dotenv.config();
 
 const app = express();
@@ -36,7 +35,7 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Share express session with socket.io so we can auth socket connections
+// Share session with socket.io
 io.engine.use(sessionMiddleware);
 io.engine.use(passport.initialize());
 io.engine.use(passport.session());
@@ -109,10 +108,15 @@ app.get("/logout", (req, res, next) => {
 
 app.get("/", (req, res) => res.render("index"));
 
-// ─── Spotify API Routes ───────────────────────────────────────────────────────
+// ─── Spotify API Routes (auth required) ──────────────────────────────────────
 
 const spotifyRouter = require("./routes/spotifyRouter");
 app.use("/spotify", ensureAuth, spotifyRouter);
+
+// ─── Rooms Routes (no auth required — guests can join) ───────────────────────
+
+const roomsRouter = require("./routes/roomsRouter");
+app.use("/rooms", roomsRouter);  // No ensureAuth here
 
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 
@@ -121,72 +125,60 @@ function ensureAuth(req, res, next) {
     res.redirect("/");
 }
 
-// ─── Socket.io — Queue Sync ───────────────────────────────────────────────────
+// ─── Socket.io ───────────────────────────────────────────────────────────────
 
 io.on("connection", (socket) => {
-    const user = socket.request.session?.passport?.user;
-    if (!user) return socket.disconnect();
+    // Guests are allowed — user may be null for unauthenticated connections
+    const user = socket.request.session?.passport?.user || null;
+    const userId      = user?.id          || `guest_${socket.id.slice(0, 6)}`;
+    const displayName = user?.displayName || "Guest";
 
-    const userId = user.id;
-    const displayName = user.displayName;
-
-    // Join a room
     socket.on("join-room", (roomId) => {
         socket.join(roomId);
         socket.currentRoom = roomId;
-
-        // Create room if it doesn't exist
         roomManager.ensureRoom(roomId);
-
-        // Send current queue state to the joining user
         socket.emit("queue-state", roomManager.getQueue(roomId));
-
-        // Notify others
         socket.to(roomId).emit("user-joined", { userId, displayName });
     });
 
-    // Add to manual queue
     socket.on("queue-add", ({ roomId, song }) => {
         roomManager.addToManualQueue(roomId, song);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // Remove from queue
     socket.on("queue-remove", ({ roomId, queueType, index }) => {
         roomManager.removeFromQueue(roomId, queueType, index);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // Reorder within a queue
     socket.on("queue-reorder", ({ roomId, queueType, fromIndex, toIndex }) => {
         roomManager.reorderQueue(roomId, queueType, fromIndex, toIndex);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // Set the auto queue (when play is pressed on a song)
     socket.on("queue-set-auto", ({ roomId, songs }) => {
         roomManager.setAutoQueue(roomId, songs);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // Song finished — advance the queue
     socket.on("queue-advance", ({ roomId }) => {
         const next = roomManager.advance(roomId);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
-        if (next) io.to(roomId).emit("play-track", next.uri);
+        if (next) io.to(roomId).emit("play-track", next);
     });
 
-    // Replenish auto queue when it gets low
     socket.on("queue-replenish", ({ roomId, songs }) => {
         roomManager.replenishAutoQueue(roomId, songs);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    socket.on("now-playing-broadcast", ({ roomId, song }) => {
+        socket.to(roomId).emit("now-playing", song);
+    });
+
     socket.on("disconnect", () => {
         if (socket.currentRoom) {
-            socket
-                .to(socket.currentRoom)
-                .emit("user-left", { userId, displayName });
+            socket.to(socket.currentRoom).emit("user-left", { userId, displayName });
         }
     });
 });
@@ -198,9 +190,7 @@ app.use((err, req, res, next) => {
     res.status(500).send("Something went wrong — check server logs");
 });
 
-app.use("/room", ensureAuth, roomsRouter);
-
-// ─── Start (use server.listen not app.listen for socket.io) ──────────────────
+// ─── Start ────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`App listening on port ${PORT}`));
