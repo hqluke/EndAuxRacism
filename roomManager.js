@@ -40,13 +40,15 @@ function getQueue(roomId) {
 function addToManualQueue(roomId, song) {
     const room = ensureRoom(roomId);
     room.manualQueue.push(song);
+    console.log(`[queue:${roomId}] ADD manual ← "${song.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
 }
 
 function removeFromQueue(roomId, queueType, index) {
     const room = ensureRoom(roomId);
     const key  = queueType === 'manual' ? 'manualQueue' : 'autoQueue';
     if (room[key]) {
-        room[key].splice(index, 1);
+        const [removed] = room[key].splice(index, 1);
+        console.log(`[queue:${roomId}] REMOVE ${queueType}[${index}] "${removed?.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
     }
 }
 
@@ -57,11 +59,13 @@ function reorderQueue(roomId, queueType, fromIndex, toIndex) {
     if (!queue) return;
     const [item] = queue.splice(fromIndex, 1);
     queue.splice(toIndex, 0, item);
+    console.log(`[queue:${roomId}] REORDER ${queueType} [${fromIndex}→${toIndex}] "${item?.name}"`);
 }
 
 function setAutoQueue(roomId, songs) {
     const room = ensureRoom(roomId);
     room.autoQueue = [...songs];
+    console.log(`[queue:${roomId}] SET auto (${songs.length} songs) — first: "${songs[0]?.name}"`);
 }
 
 /**
@@ -70,13 +74,23 @@ function setAutoQueue(roomId, songs) {
  */
 function advance(roomId) {
     const room = ensureRoom(roomId);
+    let next = null;
+    let source = null;
     if (room.manualQueue.length > 0) {
-        return room.manualQueue.shift();
+        next = room.manualQueue.shift();
+        source = 'manual';
+    } else if (room.autoQueue.length > 0) {
+        next = room.autoQueue.shift();
+        source = 'auto';
     }
-    if (room.autoQueue.length > 0) {
-        return room.autoQueue.shift();
+    if (next) {
+        console.log(`[queue:${roomId}] ADVANCE from ${source} → now playing "${next.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
+        console.log(`[queue:${roomId}]   manual queue: [${room.manualQueue.map(s => `"${s.name}"`).join(', ')}]`);
+        console.log(`[queue:${roomId}]   auto queue:   [${room.autoQueue.slice(0, 5).map(s => `"${s.name}"`).join(', ')}${room.autoQueue.length > 5 ? '...' : ''}]`);
+    } else {
+        console.log(`[queue:${roomId}] ADVANCE — both queues empty`);
     }
-    return null;
+    return next;
 }
 
 /**
@@ -86,12 +100,15 @@ function advance(roomId) {
 function replenishAutoQueue(roomId, songs) {
     const room = ensureRoom(roomId);
     const existingUris = new Set(room.autoQueue.map((s) => s.uri));
+    let added = 0;
     for (const song of songs) {
         if (!existingUris.has(song.uri)) {
             room.autoQueue.push(song);
             existingUris.add(song.uri);
+            added++;
         }
     }
+    console.log(`[queue:${roomId}] REPLENISH +${added} songs | auto=${room.autoQueue.length}`);
 }
 
 /**
@@ -99,10 +116,14 @@ function replenishAutoQueue(roomId, songs) {
  */
 function moveToManualQueue(roomId, fromAutoIndex, toManualIndex) {
     const room = ensureRoom(roomId);
-    if (fromAutoIndex < 0 || fromAutoIndex >= room.autoQueue.length) return null;
+    if (fromAutoIndex < 0 || fromAutoIndex >= room.autoQueue.length) {
+        console.warn(`[queue:${roomId}] MOVE-TO-MANUAL failed — autoIndex ${fromAutoIndex} out of range (auto=${room.autoQueue.length})`);
+        return null;
+    }
     const [song] = room.autoQueue.splice(fromAutoIndex, 1);
     const insertAt = Math.min(toManualIndex, room.manualQueue.length);
     room.manualQueue.splice(insertAt, 0, song);
+    console.log(`[queue:${roomId}] MOVE-TO-MANUAL auto[${fromAutoIndex}] → manual[${insertAt}] "${song.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
     return song;
 }
 

@@ -21,6 +21,7 @@ app.set("view engine", "ejs");
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "styles")));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -116,7 +117,7 @@ app.use("/spotify", ensureAuth, spotifyRouter);
 // ─── Rooms Routes (no auth required — guests can join) ───────────────────────
 
 const roomsRouter = require("./routes/roomsRouter");
-app.use("/rooms", roomsRouter);  // No ensureAuth here
+app.use("/rooms", roomsRouter); // No ensureAuth here
 
 // ─── Apple Music Routes (no auth required — guests use this) ─────────────────
 
@@ -135,7 +136,7 @@ function ensureAuth(req, res, next) {
 io.on("connection", (socket) => {
     // Guests are allowed — user may be null for unauthenticated connections
     const user = socket.request.session?.passport?.user || null;
-    const userId      = user?.id          || `guest_${socket.id.slice(0, 6)}`;
+    const userId = user?.id || `guest_${socket.id.slice(0, 6)}`;
     const displayName = user?.displayName || "Guest";
 
     socket.on("join-room", (roomId) => {
@@ -165,6 +166,13 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    // FIX: this handler was missing — dragging auto→manual never persisted server-side
+    socket.on("queue-move-to-manual", ({ roomId, fromAutoIndex, toManualIndex }) => {
+        console.log(`[socket:${roomId}] queue-move-to-manual fromAuto=${fromAutoIndex} toManual=${toManualIndex}`);
+        roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
+        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+    });
+
     socket.on("queue-set-auto", ({ roomId, songs }) => {
         roomManager.setAutoQueue(roomId, songs);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
@@ -173,7 +181,10 @@ io.on("connection", (socket) => {
     socket.on("queue-advance", ({ roomId }) => {
         const next = roomManager.advance(roomId);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
-        if (next) io.to(roomId).emit("play-track", next);
+        if (next) {
+            console.log(`[socket:${roomId}] queue-advance → playing "${next.name}"`);
+            io.to(roomId).emit("play-track", next);
+        }
     });
 
     socket.on("queue-replenish", ({ roomId, songs }) => {
@@ -187,7 +198,9 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         if (socket.currentRoom) {
-            socket.to(socket.currentRoom).emit("user-left", { userId, displayName });
+            socket
+                .to(socket.currentRoom)
+                .emit("user-left", { userId, displayName });
         }
     });
 });
