@@ -118,6 +118,11 @@ app.use("/spotify", ensureAuth, spotifyRouter);
 const roomsRouter = require("./routes/roomsRouter");
 app.use("/rooms", roomsRouter);  // No ensureAuth here
 
+// ─── Apple Music Routes (no auth required — guests use this) ─────────────────
+
+const appleMusicRouter = require("./routes/appleMusicRouter");
+app.use("/apple", appleMusicRouter);
+
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 
 function ensureAuth(req, res, next) {
@@ -169,11 +174,6 @@ io.on("connection", (socket) => {
 
     socket.on("queue-replenish", ({ roomId, songs }) => {
         roomManager.replenishAutoQueue(roomId, songs);
-        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
-    });
-
-    socket.on("queue-move-to-manual", ({ roomId, fromAutoIndex, toManualIndex }) => {
-        roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 

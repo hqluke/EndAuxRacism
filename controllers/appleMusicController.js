@@ -1,0 +1,185 @@
+const puppeteer = require("puppeteer");
+
+let browserInstance = null;
+
+async function getBrowser() {
+    if (browserInstance && browserInstance.isConnected()) return browserInstance;
+    browserInstance = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+    });
+    return browserInstance;
+}
+
+function extractPlaylistId(url) {
+    const match = url.match(/\/(pl\.[a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+}
+
+function normaliseUrl(url) {
+    return url.replace(/music\.apple\.com\/[a-z]{2}\//, "music.apple.com/us/");
+}
+
+// Extract iTunes track ID from Apple Music song URL
+// e.g. https://music.apple.com/us/song/awkward-freestyle/1617048196 → 1617048196
+function extractTrackId(songUrl) {
+    const match = songUrl.match(/\/(\d+)(?:\?|$)/);
+    return match ? match[1] : null;
+}
+
+// Extract song name slug from URL and humanise it
+// e.g. "awkward-freestyle" → "Awkward Freestyle"
+function slugToName(songUrl) {
+    const match = songUrl.match(/\/song\/([^/]+)\/\d+/);
+    if (!match) return null;
+    return match[1]
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const getPlaylistTracks = async (req, res, next) => {
+    const { url } = req.body;
+
+    if (!url || !url.includes("music.apple.com")) {
+        return res.status(400).json({ error: "Invalid Apple Music URL" });
+    }
+
+    const playlistId = extractPlaylistId(url);
+    if (!playlistId) {
+        return res.status(400).json({ error: "Could not find playlist ID in URL" });
+    }
+
+    const targetUrl = normaliseUrl(url);
+    console.log("[apple] fetching:", targetUrl);
+
+    let page;
+    try {
+        const browser = await getBrowser();
+        page = await browser.newPage();
+
+        await page.setUserAgent(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        );
+
+        await page.setRequestInterception(true);
+        page.on("request", (req) => {
+            const type = req.resourceType();
+            if (["image", "stylesheet", "font", "media"].includes(type)) return req.abort();
+            req.continue();
+        });
+
+        await page.goto(targetUrl, { waitUntil: "networkidle2", timeout: 30000 });
+
+        // ── Parse meta tags ────────────────────────────────────────────────────
+        // Apple embeds song URLs in meta tags — attribute names vary but content
+        // always contains music.apple.com/us/song/
+        const { playlistName, songUrls } = await page.evaluate(() => {
+            const metas = [...document.querySelectorAll("meta")];
+
+            // Playlist name — try several known attribute combos
+            const titleMeta = metas.find(m =>
+                (m.getAttribute("name") === "apple:title" ||
+                 m.getAttribute("property") === "og:title" ||
+                 m.getAttribute("name") === "og:title") &&
+                m.getAttribute("content")
+            );
+            const playlistName = titleMeta?.getAttribute("content") ||
+                document.title.replace(/\s*[-–]\s*Apple Music.*$/, "").trim();
+
+            // Song URLs — grab ANY meta tag whose content contains a song URL.
+            // Apple has used og:music:song, music:song, and unnamed tags.
+            const seen = new Set();
+            const songUrls = metas
+                .map(m => m.getAttribute("content") || "")
+                .filter(content => {
+                    if (!content.includes("music.apple.com") || !content.includes("/song/")) return false;
+                    // Deduplicate — each song appears twice (og:music:song + og:music:song:track)
+                    const id = content.match(/\/(\d+)(?:\?|$)/)?.[1];
+                    if (!id || seen.has(id)) return false;
+                    seen.add(id);
+                    return true;
+                });
+
+            return { playlistName, songUrls };
+        });
+
+        console.log(`[apple] found ${songUrls.length} song URLs in meta tags for "${playlistName}"`);
+
+        if (songUrls.length === 0) {
+            // Debug: log all meta tag contents so we can see what's there
+            const allMetas = await page.evaluate(() =>
+                [...document.querySelectorAll("meta")]
+                    .map(m => ({
+                        name:     m.getAttribute("name"),
+                        property: m.getAttribute("property"),
+                        content:  m.getAttribute("content")?.slice(0, 100),
+                    }))
+                    .filter(m => m.content)
+            );
+            console.log("[apple] all meta tags:", JSON.stringify(allMetas.slice(0, 30), null, 2));
+            return res.status(422).json({ error: "No tracks found. The playlist may be private." });
+        }
+
+        // ── Batch lookup via iTunes API ────────────────────────────────────────
+        // Extract iTunes IDs and look them up 200 at a time (API limit)
+        const trackIds = songUrls.map(extractTrackId).filter(Boolean);
+        const uniqueIds = [...new Set(trackIds)]; // deduplicate
+
+        console.log(`[apple] looking up ${uniqueIds.length} track IDs via iTunes API`);
+
+        const BATCH = 200;
+        const trackMap = {}; // id → { name, artist, album, image }
+
+        for (let i = 0; i < uniqueIds.length; i += BATCH) {
+            const batch = uniqueIds.slice(i, i + BATCH);
+            const apiUrl = `https://itunes.apple.com/lookup?id=${batch.join(",")}&entity=song`;
+
+            try {
+                const apiRes = await fetch(apiUrl);
+                const data = await apiRes.json();
+
+                for (const result of (data.results || [])) {
+                    if (result.kind !== "song" && result.wrapperType !== "track") continue;
+                    const id = String(result.trackId);
+                    trackMap[id] = {
+                        name:   result.trackName   || "Unknown",
+                        artist: result.artistName  || "Unknown Artist",
+                        album:  result.collectionName || "",
+                        // iTunes gives 100x100 artwork — bump to 300x300
+                        image:  result.artworkUrl100?.replace("100x100", "300x300") || null,
+                        isrc:   null,
+                    };
+                }
+            } catch (e) {
+                console.warn("[apple] iTunes lookup batch failed:", e.message);
+            }
+        }
+
+        // ── Build track list in original playlist order ────────────────────────
+        // songUrls is already in playlist order from the meta tags
+        const tracks = songUrls.map((songUrl) => {
+            const id = extractTrackId(songUrl);
+            if (id && trackMap[id]) return trackMap[id];
+
+            // Fallback: humanise the slug if iTunes didn't return it
+            return {
+                name:   slugToName(songUrl) || "Unknown",
+                artist: "Unknown Artist",
+                album:  "",
+                image:  null,
+                isrc:   null,
+            };
+        }).filter(t => t.name !== "Unknown");
+
+        console.log(`[apple] returning ${tracks.length} tracks for "${playlistName}"`);
+        res.json({ playlistId, name: playlistName, tracks });
+
+    } catch (err) {
+        console.error("[apple] error:", err.message);
+        next(err);
+    } finally {
+        if (page) await page.close().catch(() => {});
+    }
+};
+
+module.exports = { getPlaylistTracks };
