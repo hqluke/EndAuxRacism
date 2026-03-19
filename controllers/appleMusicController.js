@@ -3,7 +3,10 @@ const puppeteer = require("puppeteer");
 let browserInstance = null;
 
 async function getBrowser() {
-    if (browserInstance && browserInstance.isConnected()) return browserInstance;
+    try {
+        if (browserInstance && browserInstance.isConnected()) return browserInstance;
+    } catch (_) {}
+    // Launch fresh — previous instance was disconnected or crashed
     browserInstance = await puppeteer.launch({
         headless: "new",
         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
@@ -183,3 +186,73 @@ const getPlaylistTracks = async (req, res, next) => {
 };
 
 module.exports = { getPlaylistTracks };
+
+// ── Spotify track search (used by guests to queue Apple Music songs) ───────────
+// Requires a valid Spotify token stored in roomManager for the given room
+const roomManager = require("../roomManager");
+
+const searchSpotifyTrack = async (req, res, next) => {
+    const { roomId, name, artist } = req.body;
+
+    if (!roomId || !name) {
+        return res.status(400).json({ error: "roomId and name are required" });
+    }
+
+    const token = roomManager.getHostToken(roomId);
+    if (!token) {
+        return res.status(503).json({ error: "No host token available — host must be in the room" });
+    }
+
+    try {
+        // Build search query: "track:Name artist:Artist" gives best results
+        const q = artist
+            ? `track:${name} artist:${artist}`
+            : `track:${name}`;
+
+        const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=5`;
+        const spotRes = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!spotRes.ok) {
+            // Token may be expired — clear it
+            if (spotRes.status === 401) roomManager.setHostToken(roomId, null);
+            return res.status(spotRes.status).json({ error: "Spotify search failed" });
+        }
+
+        const data = await spotRes.json();
+        const items = data?.tracks?.items || [];
+
+        if (items.length === 0) {
+            // Retry with looser query (just track name)
+            const looseUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=track&limit=3`;
+            const looseRes = await fetch(looseUrl, { headers: { Authorization: `Bearer ${token}` } });
+            const looseData = await looseRes.json();
+            const looseItems = looseData?.tracks?.items || [];
+
+            if (looseItems.length === 0) {
+                return res.json({ uri: null, match: null });
+            }
+
+            const best = looseItems[0];
+            return res.json({
+                uri:    best.uri,
+                match:  best.name,
+                artist: best.artists.map(a => a.name).join(", "),
+                image:  best.album.images[1]?.url || best.album.images[0]?.url || null,
+            });
+        }
+
+        const best = items[0];
+        res.json({
+            uri:    best.uri,
+            match:  best.name,
+            artist: best.artists.map(a => a.name).join(", "),
+            image:  best.album.images[1]?.url || best.album.images[0]?.url || null,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+module.exports = { getPlaylistTracks, searchSpotifyTrack };

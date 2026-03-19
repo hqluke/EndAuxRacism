@@ -142,6 +142,10 @@ io.on("connection", (socket) => {
         socket.join(roomId);
         socket.currentRoom = roomId;
         roomManager.ensureRoom(roomId);
+        // If this is an authenticated user (the host), store their token
+        if (user?.accessToken) {
+            roomManager.setHostToken(roomId, user.accessToken);
+        }
         socket.emit("queue-state", roomManager.getQueue(roomId));
         socket.to(roomId).emit("user-joined", { userId, displayName });
     });

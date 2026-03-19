@@ -1309,9 +1309,43 @@
             `;
             // Note: queueSong needs a uri — we'll add Spotify matching in the next step.
             // For now, store the raw song data so we can match later.
-            row.querySelector('.btn-queue').addEventListener('click', () => {
-                // Placeholder — Spotify search matching comes next
-                showToast(`"${song.name}" — Spotify matching coming next!`);
+            row.querySelector('.btn-queue').addEventListener('click', async (e) => {
+                const btn = e.currentTarget;
+                btn.disabled = true;
+                btn.textContent = '...';
+
+                try {
+                    const res = await fetch('/apple/search', {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ roomId, name: song.name, artist: song.artist }),
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok || !data.uri) {
+                        showToast(`"${song.name}" not found on Spotify`);
+                        btn.disabled = false;
+                        btn.textContent = '+ queue';
+                        return;
+                    }
+
+                    socket.emit('queue-add', {
+                        roomId,
+                        song: {
+                            uri:    data.uri,
+                            name:   data.match  || song.name,
+                            artist: data.artist || song.artist,
+                            image:  data.image  || song.image || null,
+                            album:  '',
+                        },
+                    });
+                    showToast(`"${data.match || song.name}" added to queue`);
+                    btn.textContent = '✓ queued';
+                } catch (err) {
+                    showToast('Failed to search Spotify');
+                    btn.disabled = false;
+                    btn.textContent = '+ queue';
+                }
             });
             list.appendChild(row);
         });

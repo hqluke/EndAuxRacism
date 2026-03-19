@@ -14,9 +14,19 @@ function ensureRoom(roomId) {
         rooms.set(roomId, {
             autoQueue: [],
             manualQueue: [],
+            hostToken: null,  // Spotify access token from the host
         });
     }
     return rooms.get(roomId);
+}
+
+function setHostToken(roomId, token) {
+    const room = ensureRoom(roomId);
+    room.hostToken = token;
+}
+
+function getHostToken(roomId) {
+    return rooms.get(roomId)?.hostToken || null;
 }
 
 function getQueue(roomId) {
@@ -34,15 +44,15 @@ function addToManualQueue(roomId, song) {
 
 function removeFromQueue(roomId, queueType, index) {
     const room = ensureRoom(roomId);
-    const key = queueType === "manual" ? "manualQueue" : "autoQueue";
+    const key  = queueType === 'manual' ? 'manualQueue' : 'autoQueue';
     if (room[key]) {
         room[key].splice(index, 1);
     }
 }
 
 function reorderQueue(roomId, queueType, fromIndex, toIndex) {
-    const room = ensureRoom(roomId);
-    const key = queueType === "manual" ? "manualQueue" : "autoQueue";
+    const room  = ensureRoom(roomId);
+    const key   = queueType === 'manual' ? 'manualQueue' : 'autoQueue';
     const queue = room[key];
     if (!queue) return;
     const [item] = queue.splice(fromIndex, 1);
@@ -89,8 +99,7 @@ function replenishAutoQueue(roomId, songs) {
  */
 function moveToManualQueue(roomId, fromAutoIndex, toManualIndex) {
     const room = ensureRoom(roomId);
-    if (fromAutoIndex < 0 || fromAutoIndex >= room.autoQueue.length)
-        return null;
+    if (fromAutoIndex < 0 || fromAutoIndex >= room.autoQueue.length) return null;
     const [song] = room.autoQueue.splice(fromAutoIndex, 1);
     const insertAt = Math.min(toManualIndex, room.manualQueue.length);
     room.manualQueue.splice(insertAt, 0, song);
@@ -107,4 +116,6 @@ module.exports = {
     advance,
     replenishAutoQueue,
     moveToManualQueue,
+    setHostToken,
+    getHostToken,
 };
