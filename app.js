@@ -172,6 +172,11 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    socket.on("queue-move-to-manual", ({ roomId, fromAutoIndex, toManualIndex }) => {
+        roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
+        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+    });
+
     socket.on("now-playing-broadcast", ({ roomId, song }) => {
         socket.to(roomId).emit("now-playing", song);
     });

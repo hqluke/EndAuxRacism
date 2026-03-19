@@ -84,6 +84,19 @@ function replenishAutoQueue(roomId, songs) {
     }
 }
 
+/**
+ * Move a song from the auto queue into the manual queue.
+ */
+function moveToManualQueue(roomId, fromAutoIndex, toManualIndex) {
+    const room = ensureRoom(roomId);
+    if (fromAutoIndex < 0 || fromAutoIndex >= room.autoQueue.length)
+        return null;
+    const [song] = room.autoQueue.splice(fromAutoIndex, 1);
+    const insertAt = Math.min(toManualIndex, room.manualQueue.length);
+    room.manualQueue.splice(insertAt, 0, song);
+    return song;
+}
+
 module.exports = {
     ensureRoom,
     getQueue,
@@ -93,4 +106,5 @@ module.exports = {
     setAutoQueue,
     advance,
     replenishAutoQueue,
+    moveToManualQueue,
 };

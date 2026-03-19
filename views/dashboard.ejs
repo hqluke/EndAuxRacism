@@ -22,6 +22,7 @@
             --muted2: #888;
             --player-h: 88px;
             --drawer-w: 340px;
+            --sidebar-w: 240px;
         }
 
         body {
@@ -64,9 +65,105 @@
         }
         .btn-start-room:hover { background: var(--green-dim); transform: scale(1.03); }
 
+        /* ── Layout ── */
+        .layout {
+            display: flex;
+            min-height: calc(100vh - 73px); /* below header */
+        }
+
+        /* ── Left Sidebar ── */
+        #library-sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 73px; /* header height */
+            height: calc(100vh - 73px - var(--player-h));
+            overflow: hidden;
+            transition: width 0.3s cubic-bezier(0.4,0,0.2,1),
+                        opacity 0.3s;
+        }
+        #library-sidebar.collapsed {
+            width: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 16px 12px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .sidebar-title {
+            font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+            letter-spacing: -0.01em;
+        }
+
+        .sidebar-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .sidebar-body::-webkit-scrollbar { width: 3px; }
+        .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Source items in sidebar */
+        .source-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 14px; cursor: pointer;
+            border-radius: 6px; margin: 0 6px 2px;
+            border: 1px solid transparent;
+            transition: background 0.12s;
+            min-width: 0;
+        }
+        .source-item:hover { background: var(--surface2); }
+        .source-item.active { background: var(--surface2); border-color: var(--border); }
+        .source-item.active .source-name { color: var(--green); }
+
+        .source-art {
+            width: 36px; height: 36px; border-radius: 4px;
+            object-fit: cover; flex-shrink: 0;
+            background: var(--surface2); border: 1px solid var(--border);
+        }
+        .source-art-placeholder {
+            width: 36px; height: 36px; border-radius: 4px; flex-shrink: 0;
+            background: var(--surface3); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted);
+        }
+        .source-info { overflow: hidden; flex: 1; min-width: 0; }
+        .source-name {
+            font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.78rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .source-meta { font-size: 0.65rem; color: var(--muted2); margin-top: 1px; }
+
+        .sidebar-section-label {
+            font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted);
+            padding: 10px 14px 4px; text-transform: uppercase;
+        }
+
+        /* Liked Songs special item */
+        .source-item.liked .source-art-placeholder {
+            background: linear-gradient(135deg, #450af5, #c4efd9);
+        }
+
+        /* Sidebar toggle button (in header) */
+        #btn-library-toggle {
+            background: none; border: 1px solid var(--border); border-radius: 8px;
+            color: var(--muted2); cursor: pointer; padding: 6px 10px;
+            font-family: 'DM Mono', monospace; font-size: 0.7rem;
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.15s; flex-shrink: 0;
+        }
+        #btn-library-toggle:hover { color: var(--text); border-color: var(--muted2); }
+        #btn-library-toggle.active { color: var(--green); border-color: var(--green); }
+
         /* ── Main ── */
         main {
-            max-width: 860px; margin: 0 auto; padding: 48px 24px 0;
+            flex: 1;
+            min-width: 0;
+            padding: 48px 32px 0;
             transition: margin-right 0.35s cubic-bezier(0.4,0,0.2,1);
         }
         body.drawer-open main { margin-right: var(--drawer-w); }
@@ -140,7 +237,8 @@
             background: rgba(15,15,15,0.97); border-top: 1px solid var(--border);
             backdrop-filter: blur(16px);
             display: flex; align-items: center; padding: 0 32px; gap: 24px; z-index: 100;
-            transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+            transition: right 0.35s cubic-bezier(0.4,0,0.2,1),
+                        left 0.3s cubic-bezier(0.4,0,0.2,1);
         }
         body.drawer-open #player-bar { right: var(--drawer-w); }
 
@@ -283,7 +381,7 @@
 
         /* Mobile responsive */
         @media (max-width: 600px) {
-            :root { --drawer-w: 100vw; }
+            :root { --drawer-w: 100vw; --sidebar-w: 100vw; }
             header { padding: 16px 20px; }
             main { padding: 24px 12px 0; }
             .song-row { grid-template-columns: 24px 40px 1fr 80px; }
@@ -291,6 +389,13 @@
             #player-bar { padding: 0 16px; gap: 12px; }
             .now-playing { width: 140px; }
             .volume-wrap { display: none; }
+            #library-sidebar {
+                position: fixed; top: 73px; left: 0; z-index: 80;
+                height: calc(100vh - 73px - var(--player-h));
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            }
+            #library-sidebar:not(.collapsed) { transform: translateX(0); }
         }
     </style>
 </head>
@@ -298,7 +403,13 @@
 
 <header>
     <div class="logo">EndAuxRacism</div>
-    <div style="display:flex;align-items:center;gap:16px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button id="btn-library-toggle" class="active" title="Toggle library">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+            </svg>
+            Library
+        </button>
         <div class="user-pill">
             <% if (user.avatar) { %>
                 <img src="<%= user.avatar %>" alt="<%= user.displayName %>" />
@@ -315,12 +426,40 @@
     </div>
 </header>
 
+<div class="layout">
+
+<!-- ── Library Sidebar ── -->
+<div id="library-sidebar">
+    <div class="sidebar-header">
+        <span class="sidebar-title">Library</span>
+    </div>
+    <div class="sidebar-body" id="sidebar-body">
+        <div class="sidebar-section-label">Songs</div>
+        <div class="source-item liked active" id="source-liked" data-source="liked">
+            <div class="source-art-placeholder">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <div class="source-info">
+                <div class="source-name">Liked Songs</div>
+                <div class="source-meta" id="liked-count">— songs</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section-label">Playlists</div>
+        <div id="playlist-list">
+            <div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Loading...</div>
+        </div>
+    </div>
+</div>
+
 <main>
     <% if (songs && songs.length > 0) { %>
 
     <div class="section-header">
         <div class="header-left">
-            <h1>Liked Songs</h1>
+            <h1 id="source-title">Liked Songs</h1>
             <span class="count" id="count-label">LAST 50 ADDED</span>
         </div>
         <div class="search-wrap">
@@ -342,6 +481,8 @@
     </div>
     <% } %>
 </main>
+
+</div><!-- /.layout -->
 
 <!-- ── Queue Drawer ── -->
 <div id="queue-drawer">
@@ -428,8 +569,13 @@
     let isDragging      = false;
     let lastAdvancedUri = null;
 
-    // For auto-queue refill tracking
-    let autoQueueOffset = 50; // we loaded 50 songs; next fetch starts here
+    // For liked songs infinite scroll
+    let likedOffset    = allSongs.length; // already loaded this many on page load
+    let likedLoading   = false;
+    let likedExhausted = false;
+
+    // For auto-queue refill tracking (separate from display)
+    let autoQueueOffset = 50;
 
     // ── Socket.io ─────────────────────────────────────────────────────────────
     const socket = io();
@@ -569,8 +715,8 @@
         currentTrackUri = trackUri;
 
         if (setAutoFromHere) {
-            const idx   = allSongs.findIndex(s => s.uri === trackUri);
-            const after = idx >= 0 ? allSongs.slice(idx + 1) : allSongs;
+            const idx   = currentSongs.findIndex(s => s.uri === trackUri);
+            const after = idx >= 0 ? currentSongs.slice(idx + 1) : currentSongs;
             const batch = after.slice(0, 30);
             console.log('[queue] queue-set-auto emitting', batch.length, 'songs, starting at index', idx + 1);
             socket.emit('queue-set-auto', { roomId, songs: batch });
@@ -725,6 +871,19 @@
         console.log('[drag] queue-reorder emitted');
     }
 
+    function moveToManualQueue(fromAutoIndex, toManualIndex) {
+        const autoCopy   = [...autoQueue];
+        const manualCopy = [...manualQueue];
+        const [moved] = autoCopy.splice(fromAutoIndex, 1);
+        const insertAt = manualCopy.length === 0 ? 0 : toManualIndex;
+        manualCopy.splice(insertAt, 0, moved);
+        autoQueue   = autoCopy;
+        manualQueue = manualCopy;
+        renderQueue();
+        socket.emit('queue-move-to-manual', { roomId, fromAutoIndex, toManualIndex: insertAt });
+        console.log('[drag] queue-move-to-manual emitted — auto[', fromAutoIndex, '] → manual[', insertAt, ']');
+    }
+
     function initDragOnDrawer() {
         const body = document.getElementById('drawer-body');
 
@@ -788,7 +947,12 @@
             console.log('[drag] drop — from:', fromIndex, '(', fromType, ') to:', toIndex, '(', toType, ')');
 
             if (fromType !== toType) {
-                console.log('[drag] drop skipped — cross-queue drag not supported');
+                if (fromType === 'auto' && toType === 'manual') {
+                    console.log('[drag] cross-queue: auto[', fromIndex, '] → manual[', toIndex, ']');
+                    moveToManualQueue(fromIndex, toIndex);
+                } else {
+                    console.log('[drag] drop skipped — unsupported cross-queue direction');
+                }
                 return;
             }
             reorderQueue(fromType, fromIndex, toIndex);
@@ -825,18 +989,27 @@
 
             const touch     = e.changedTouches[0];
             const fromIndex = parseInt(touchItem.dataset.index);
-            const queueType = touchItem.dataset.queueType;
+            const fromType  = touchItem.dataset.queueType;
 
-            const siblings = [...document.querySelectorAll(`.queue-item[data-queue-type="${queueType}"]`)]
+            // Search all queue items (not just same-type) for cross-queue support
+            const allItems = [...document.querySelectorAll('.queue-item')]
                 .filter(el => el !== touchItem);
-            const target = siblings.find(el => {
+            const target = allItems.find(el => {
                 const r = el.getBoundingClientRect();
                 return touch.clientY >= r.top && touch.clientY <= r.bottom;
             });
 
-            console.log('[drag] touchend — from:', fromIndex, 'target found:', !!target);
+            console.log('[drag] touchend — from:', fromIndex, '(', fromType, ') target found:', !!target, target ? '(' + target.dataset.queueType + ')' : '');
             if (target) {
-                reorderQueue(queueType, fromIndex, parseInt(target.dataset.index));
+                const toType  = target.dataset.queueType;
+                const toIndex = parseInt(target.dataset.index);
+                if (fromType !== toType) {
+                    if (fromType === 'auto' && toType === 'manual') {
+                        moveToManualQueue(fromIndex, toIndex);
+                    }
+                } else {
+                    reorderQueue(fromType, fromIndex, toIndex);
+                }
             }
             touchItem  = null;
             isDragging = false;
@@ -936,6 +1109,34 @@
     }
 
     // ── Render Song List ──────────────────────────────────────────────────────
+    function makeSongRow(song, i) {
+        const row      = document.createElement('div');
+        row.className  = 'song-row';
+        const isActive = song.uri === currentTrackUri;
+        const query    = document.getElementById('search').value.trim();
+        row.innerHTML = `
+            <span class="song-index" style="${isActive ? 'color:var(--green)' : ''}">${i + 1}</span>
+            ${song.image
+                ? `<img class="song-art" src="${song.image}" alt="${song.album || ''}" />`
+                : `<div class="song-art-placeholder"></div>`}
+            <div class="song-info">
+                <div class="song-name">${highlight(song.name, query)}</div>
+                <div class="song-artist">${highlight(song.artist, query)}</div>
+            </div>
+            <div class="song-meta">
+                <span class="song-duration">${song.duration || ''}</span>
+                <span class="song-added">${song.addedAt || ''}</span>
+            </div>
+            <div class="row-actions">
+                <button class="btn-play">▶ play</button>
+                <button class="btn-queue">+ queue</button>
+            </div>
+        `;
+        row.querySelector('.btn-play').addEventListener('click',  () => playSong(song.uri, true));
+        row.querySelector('.btn-queue').addEventListener('click', () => queueSong(song));
+        return row;
+    }
+
     function renderSongs(filtered) {
         const list       = document.getElementById('song-list');
         const noResults  = document.getElementById('no-results');
@@ -952,49 +1153,200 @@
         noResults.style.display = 'none';
         countLabel.textContent  = query
             ? `${filtered.length} RESULT${filtered.length !== 1 ? 'S' : ''}`
-            : `LAST ${filtered.length} ADDED`;
+            : `${filtered.length} SONGS`;
 
-        filtered.forEach((song, i) => {
-            const row     = document.createElement('div');
-            row.className = 'song-row';
-            const isActive = song.uri === currentTrackUri;
+        filtered.forEach((song, i) => list.appendChild(makeSongRow(song, i)));
 
-            row.innerHTML = `
-                <span class="song-index" style="${isActive ? 'color:var(--green)' : ''}">${i + 1}</span>
-                ${song.image
-                    ? `<img class="song-art" src="${song.image}" alt="${song.album}" />`
-                    : `<div class="song-art-placeholder"></div>`}
-                <div class="song-info">
-                    <div class="song-name">${highlight(song.name, query)}</div>
-                    <div class="song-artist">${highlight(song.artist, query)}</div>
-                </div>
-                <div class="song-meta">
-                    <span class="song-duration">${song.duration}</span>
-                    <span class="song-added">${song.addedAt}</span>
-                </div>
-                <div class="row-actions">
-                    <button class="btn-play">▶ play</button>
-                    <button class="btn-queue">+ queue</button>
-                </div>
-            `;
-
-            row.querySelector('.btn-play').addEventListener('click',  () => playSong(song.uri, true));
-            row.querySelector('.btn-queue').addEventListener('click', () => queueSong(song));
-            list.appendChild(row);
-        });
+        // Attach infinite scroll sentinel for liked songs when not searching
+        if (currentSource === 'liked' && !query && !likedExhausted) {
+            attachScrollSentinel();
+        }
     }
 
-    renderSongs(allSongs);
+    // ── Source state ──────────────────────────────────────────────────────────
+    let currentSource   = 'liked'; // 'liked' | playlist id
+    let currentSongs    = [...allSongs]; // what's shown in the main list
+    let playlistCache   = {};  // playlistId → track array
 
+    // Update liked count in sidebar
+    document.getElementById('liked-count').textContent = `${allSongs.length} songs`;
+
+    renderSongs(currentSongs);
+
+    // ── Search (always searches currentSongs) ─────────────────────────────────
     document.getElementById('search').addEventListener('input', (e) => {
         const query = e.target.value.trim();
-        if (!query) { renderSongs(allSongs); return; }
-        const scored = allSongs
+        if (!query) { renderSongs(currentSongs); return; }
+        const scored = currentSongs
             .map(s => ({ song: s, score: Math.min(fuzzyScore(s.name, query) * 0.5, fuzzyScore(s.artist, query)) }))
             .filter(s => s.score < Infinity)
             .sort((a, b) => a.score - b.score);
         renderSongs(scored.map(s => s.song));
     });
+
+    // ── Library Sidebar Toggle ────────────────────────────────────────────────
+    const sidebar    = document.getElementById('library-sidebar');
+    const libToggle  = document.getElementById('btn-library-toggle');
+
+    libToggle.addEventListener('click', () => {
+        const collapsed = sidebar.classList.toggle('collapsed');
+        libToggle.classList.toggle('active', !collapsed);
+    });
+
+    // ── Switch source ─────────────────────────────────────────────────────────
+    async function switchSource(sourceId, sourceName) {
+        // Update active state in sidebar
+        document.querySelectorAll('.source-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.source === sourceId);
+        });
+
+        currentSource = sourceId;
+        document.getElementById('source-title').textContent = sourceName;
+        document.getElementById('search').value = '';
+
+        if (sourceId === 'liked') {
+            currentSongs = [...allSongs];
+            document.getElementById('count-label').textContent = `${allSongs.length} SONGS`;
+            renderSongs(currentSongs); // also re-attaches sentinel
+            return;
+        }
+
+        // Playlist — check cache first
+        if (playlistCache[sourceId]) {
+            currentSongs = playlistCache[sourceId];
+            document.getElementById('count-label').textContent = `${currentSongs.length} SONGS`;
+            renderSongs(currentSongs);
+            return;
+        }
+
+        // Fetch from server
+        document.getElementById('count-label').textContent = 'LOADING...';
+        document.getElementById('song-list').innerHTML = `
+            <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
+                Loading tracks...
+            </div>`;
+
+        try {
+            const res   = await fetch(`/spotify/playlists/${sourceId}/tracks`);
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                const msg  = body.error || `Spotify error ${res.status}`;
+                console.warn('[library] playlist tracks error:', res.status, msg);
+                document.getElementById('count-label').textContent = 'UNAVAILABLE';
+                document.getElementById('song-list').innerHTML = `
+                    <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
+                        This playlist can't be loaded (${msg})
+                    </div>`;
+                return;
+            }
+            const songs = await res.json();
+            playlistCache[sourceId] = songs;
+            // Only render if still on this source (user may have switched away)
+            if (currentSource === sourceId) {
+                currentSongs = songs;
+                document.getElementById('count-label').textContent = `${songs.length} SONGS`;
+                renderSongs(currentSongs);
+            }
+        } catch (e) {
+            console.error('[library] failed to load playlist tracks:', e);
+            document.getElementById('count-label').textContent = 'ERROR';
+        }
+    }
+
+    // Liked songs source click
+    document.getElementById('source-liked').addEventListener('click', () => {
+        switchSource('liked', 'Liked Songs');
+    });
+
+    // ── Load playlists into sidebar ───────────────────────────────────────────
+    async function loadPlaylists() {
+        try {
+            const res       = await fetch('/spotify/playlists');
+            const playlists = await res.json();
+            const container = document.getElementById('playlist-list');
+            container.innerHTML = '';
+
+            if (playlists.length === 0) {
+                container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">No playlists found</div>`;
+                return;
+            }
+
+            playlists.forEach(pl => {
+                const item = document.createElement('div');
+                item.className = 'source-item';
+                item.dataset.source = pl.id;
+                item.innerHTML = `
+                    ${pl.image
+                        ? `<img class="source-art" src="${pl.image}" alt="${pl.name}" />`
+                        : `<div class="source-art-placeholder">
+                               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+                           </div>`}
+                    <div class="source-info">
+                        <div class="source-name">${pl.name}</div>
+                        <div class="source-meta">${pl.trackCount} songs</div>
+                    </div>
+                `;
+                item.addEventListener('click', () => switchSource(pl.id, pl.name));
+                container.appendChild(item);
+            });
+        } catch (e) {
+            console.error('[library] failed to load playlists:', e);
+            document.getElementById('playlist-list').innerHTML =
+                `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
+        }
+    }
+
+    loadPlaylists();
+
+    // ── Infinite scroll for liked songs ───────────────────────────────────────
+    async function loadMoreLikedSongs() {
+        if (likedLoading || likedExhausted || currentSource !== 'liked') return;
+        likedLoading = true;
+        try {
+            const res = await fetch(`/spotify/liked?offset=${likedOffset}&limit=50`);
+            if (!res.ok) { likedLoading = false; return; }
+            const songs = await res.json();
+
+            if (songs.length === 0) {
+                likedExhausted = true;
+                document.getElementById('scroll-sentinel')?.remove();
+                likedLoading = false;
+                return;
+            }
+
+            allSongs.push(...songs);
+            likedOffset += songs.length;
+
+            if (currentSource === 'liked') {
+                currentSongs = [...allSongs];
+                const list  = document.getElementById('song-list');
+                const query = document.getElementById('search').value.trim();
+                if (!query) {
+                    const startIdx = allSongs.length - songs.length;
+                    songs.forEach((song, i) => {
+                        list.insertBefore(makeSongRow(song, startIdx + i),
+                            document.getElementById('scroll-sentinel'));
+                    });
+                    document.getElementById('count-label').textContent = `${allSongs.length} SONGS`;
+                }
+            }
+        } catch (e) {
+            console.warn('[scroll] failed to load more songs:', e);
+        }
+        likedLoading = false;
+    }
+
+    function attachScrollSentinel() {
+        document.getElementById('scroll-sentinel')?.remove();
+        const sentinel = document.createElement('div');
+        sentinel.id = 'scroll-sentinel';
+        sentinel.style.height = '1px';
+        document.getElementById('song-list').appendChild(sentinel);
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadMoreLikedSongs();
+        }, { rootMargin: '200px' });
+        observer.observe(sentinel);
+    }
 
     // Initial empty queue render
     renderQueue();
