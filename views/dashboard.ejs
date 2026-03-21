@@ -154,7 +154,6 @@
         <input type="range" id="volume-slider" min="0" max="100" value="80" />
     </div>
     <div class="player-bar-right">
-        <span id="sdk-status-bar" style="font-size:0.65rem;color:var(--muted);white-space:nowrap;"></span>
         <button id="btn-queue-toggle" title="Toggle queue">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
@@ -478,25 +477,26 @@
     function makeQueueItem(song, index, queueType) {
         const item = document.createElement('div');
         item.className = 'queue-item';
-        item.draggable = true;
         item.dataset.index     = index;
         item.dataset.queueType = queueType;
         item.innerHTML = `
-            <div class="drag-handle">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
-                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            <button class="btn-remove-queue" title="Remove">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
-            </div>
-            ${song.image ? `<img class="q-art" src="${song.image}" alt="" />` : `<div class="q-art-placeholder"></div>`}
+            </button>
+            ${song.image
+                ? `<img class="q-art" src="${song.image}" alt="" draggable="false" />`
+                : `<div class="q-art-placeholder"></div>`}
             <div class="q-info">
                 <div class="q-name">${song.name}</div>
                 <div class="q-artist">${song.artist}</div>
             </div>
-            <button class="btn-remove-queue" title="Remove">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6 6 18M6 6l12 12"/>
+            <div class="drag-handle" draggable="true" title="Drag to reorder">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                 </svg>
-            </button>`;
+            </div>`;
         item.querySelector('.btn-remove-queue').addEventListener('click', (e) => {
             e.stopPropagation();
             socket.emit('queue-remove', { roomId, queueType: item.dataset.queueType, index: parseInt(item.dataset.index) });
@@ -548,7 +548,9 @@
 
         // Mouse
         body.addEventListener('dragstart', (e) => {
-            const item = e.target.closest('.queue-item');
+            const handle = e.target.closest('.drag-handle');
+            if (!handle) { e.preventDefault(); return; }
+            const item = handle.closest('.queue-item');
             if (!item) return;
             dragSrc = item; isDragging = true;
             e.dataTransfer.effectAllowed = 'move';
@@ -734,10 +736,6 @@
             <div class="song-info">
                 <div class="song-name">${highlight(song.name, query)}</div>
                 <div class="song-artist">${highlight(song.artist, query)}</div>
-            </div>
-            <div class="song-meta">
-                <span class="song-duration">${song.duration || ''}</span>
-                <span class="song-added">${song.addedAt || ''}</span>
             </div>
             <div class="row-actions">
                 <button class="btn-play">▶ play</button>

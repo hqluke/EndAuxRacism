@@ -700,6 +700,7 @@ body.drawer-open #guest-panel {
 }
 .song-info {
     overflow: hidden;
+    min-width: 0;
 }
 .song-name {
     font-family: "Syne", sans-serif;
@@ -728,22 +729,20 @@ body.drawer-open #guest-panel {
 
 .btn-play,
 .btn-queue {
-    height: 52px;
-    width: 72px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-family: "DM Mono", monospace;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     padding: 0 14px;
-    margin: 10px 2px;
+    margin: 8px 0;
     transition:
         background 0.15s,
         transform 0.1s;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    text-align: center;
+    flex-shrink: 0;
 }
 .btn-play {
     background: var(--green);
@@ -1394,19 +1393,19 @@ body.drawer-open #player-bar {
 
     main,
     #guest-panel {
-        padding: 16px 12px 16px;
+        padding: 16px 6px 16px;
     }
 
     /* Song rows — tighter on mobile */
     .song-row {
-        grid-template-columns: 28px 66px 1fr auto;
+        grid-template-columns: 28px 56px 1fr auto;
         gap: 10px;
-        padding: 10px 10px;
+        padding: 10px 6px;
     }
     .song-art,
     .song-art-placeholder {
-        width: 66px;
-        height: 66px;
+        width: 56px;
+        height: 56px;
     }
     .song-name {
         font-size: 0.82rem;
@@ -1423,13 +1422,6 @@ body.drawer-open #player-bar {
     .btn-queue {
         padding: 0 9px;
         font-size: 0.6rem;
-    height: 52px;
-    width: 62px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: "DM Mono", monospace;
-    font-size: 0.72rem;
     }
 
     /* Player/guest bar */
@@ -1498,17 +1490,21 @@ body.drawer-open #player-bar {
         --sidebar-w: 85vw;
     }
     .song-row {
-        grid-template-columns: 22px 58px 1fr auto;
+        grid-template-columns: 20px 48px 1fr auto;
         gap: 8px;
-        padding: 7px 8px;
+        padding: 8px 4px;
     }
     .song-art,
     .song-art-placeholder {
-        width: 58px;
-        height: 58px;
+        width: 48px;
+        height: 48px;
+    }
+    .btn-play,
+    .btn-queue {
+        padding: 0 7px;
+        font-size: 0.58rem;
     }
 
-    /* Search bars don't expand on focus at this size — just fill available space */
     #search,
     #guest-search {
         width: 180px;
@@ -1584,14 +1580,14 @@ body.drawer-open #player-bar {
 
     /* Song rows */
     .song-row {
-        grid-template-columns: 20px 58px 1fr auto;
+        grid-template-columns: 20px 68px 1fr auto;
         gap: 8px;
         padding: 12px 6px;
     }
     .song-art,
     .song-art-placeholder {
-        width: 58px;
-        height: 58px;
+        width: 68px;
+        height: 68px;
     }
     .song-name {
         font-size: 0.78rem;
@@ -1603,7 +1599,6 @@ body.drawer-open #player-bar {
     .btn-queue {
         padding: 0 6px;
         font-size: 0.58rem;
-        width: 52px;
     }
 
     /* Player / guest bar */
@@ -1710,14 +1705,14 @@ body.drawer-open #player-bar {
 
     /* Song rows — minimal */
     .song-row {
-        grid-template-columns: 18px 44px 1fr auto;
+        grid-template-columns: 18px 64px 1fr auto;
         gap: 7px;
         padding: 10px 5px;
     }
     .song-art,
     .song-art-placeholder {
-        width: 44px;
-        height: 44px;
+        width: 64px;
+        height: 64px;
     }
     .song-name {
         font-size: 0.74rem;
@@ -1819,14 +1814,14 @@ body.drawer-open #player-bar {
     }
 
     .song-row {
-        grid-template-columns: 16px 36px 1fr auto;
+        grid-template-columns: 16px 60px 1fr auto;
         gap: 6px;
         padding: 10px 4px;
     }
     .song-art,
     .song-art-placeholder {
-        width: 36px;
-        height: 36px;
+        width: 60px;
+        height: 60px;
     }
     .song-name {
         font-size: 0.7rem;

@@ -69,10 +69,7 @@ main {
     overflow-x: hidden;
 }
 
-/* ── Song rows: dashboard has extra meta column ── */
-.song-row {
-    grid-template-columns: 32px 48px 1fr auto 90px;
-}
+/* ── Song rows: dashboard adds meta column to rooms.css base ── */
 
 .song-meta {
     display: flex;
@@ -107,13 +104,16 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
     gap: 6px;
     flex-shrink: 0;
 }
-.player-bar-right #sdk-status {
+.player-bar-right #sdk-status,
+.player-bar-right #sdk-status-bar {
     font-size: 0.65rem;
     color: var(--muted);
     white-space: nowrap;
 }
-.player-bar-right #sdk-status.ready { color: var(--green); }
-.player-bar-right #sdk-status.error { color: #e74c3c; }
+.player-bar-right #sdk-status.ready,
+.player-bar-right #sdk-status-bar.ready { color: var(--green); }
+.player-bar-right #sdk-status.error,
+.player-bar-right #sdk-status-bar.error { color: #e74c3c; }
 
 /* ── Queue remove buttons always visible ── */
 .btn-remove-queue {
@@ -174,13 +174,7 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 
     main { padding: 16px 12px 0; }
 
-    .song-row {
-        grid-template-columns: 28px 40px 1fr auto;
-        gap: 10px;
-        padding: 8px 10px;
-    }
     .song-meta { display: none; }
-    .song-art, .song-art-placeholder { width: 40px; height: 40px; }
 
     #player-bar { padding: 0 12px; gap: 10px; height: 72px; }
     .now-playing { width: auto; flex: 1; min-width: 0; }
@@ -200,9 +194,6 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 ══════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
     :root { --sidebar-w: 85vw; }
-
-    .song-row { grid-template-columns: 22px 36px 1fr auto; gap: 8px; padding: 7px 8px; }
-    .song-art, .song-art-placeholder { width: 36px; height: 36px; }
 
     #search { width: 140px; }
     #search:focus { width: 160px; }
@@ -224,12 +215,6 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 
     .section-header { flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .header-title-group h1 { font-size: 1.2rem; }
-
-    .song-row { grid-template-columns: 20px 34px 1fr auto; gap: 7px; padding: 6px 6px; }
-    .song-art, .song-art-placeholder { width: 34px; height: 34px; }
-    .song-name { font-size: 0.78rem; }
-    .song-artist { font-size: 0.65rem; }
-    .btn-play, .btn-queue { padding: 4px 6px; font-size: 0.58rem; }
 
     #player-bar { padding: 0 10px; gap: 8px; height: var(--player-h); }
     #np-art { width: 36px; height: 36px; }
@@ -258,12 +243,6 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
     main { padding: 10px 8px 0; }
 
     .header-title-group h1 { font-size: 1.1rem; }
-
-    .song-row { grid-template-columns: 18px 30px 1fr auto; gap: 6px; padding: 5px 5px; }
-    .song-art, .song-art-placeholder { width: 30px; height: 30px; }
-    .song-name { font-size: 0.74rem; }
-    .song-artist { font-size: 0.62rem; }
-    .btn-play, .btn-queue { padding: 3px 5px; font-size: 0.55rem; }
 
     #player-bar { padding: 0 8px; gap: 6px; height: var(--player-h); }
     #np-art { width: 32px; height: 32px; }
@@ -294,12 +273,6 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 
     .section-header { gap: 6px; margin-bottom: 8px; }
     .header-title-group h1 { font-size: 1rem; }
-
-    .song-row { grid-template-columns: 16px 28px 1fr auto; gap: 4px; padding: 5px 4px; }
-    .song-art, .song-art-placeholder { width: 28px; height: 28px; }
-    .song-name { font-size: 0.7rem; }
-    .song-artist { font-size: 0.6rem; }
-    .btn-play, .btn-queue { padding: 3px 4px; font-size: 0.52rem; }
 
     #player-bar { padding: 0 6px; gap: 5px; height: var(--player-h); }
     #np-art { width: 28px; height: 28px; }
