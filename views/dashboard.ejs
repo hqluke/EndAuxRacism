@@ -254,8 +254,14 @@
         backdrop.classList.remove('visible');
     }
 
+    let playlistsLoaded = false;
     libToggle.addEventListener('click', () => {
-        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        if (sidebar.classList.contains('open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+            if (!playlistsLoaded) { playlistsLoaded = true; loadPlaylists(); }
+        }
     });
     backdrop.addEventListener('click', closeSidebar);
 
@@ -850,18 +856,27 @@
 
     // ── Load playlists into sidebar ───────────────────────────────────────────
     async function loadPlaylists() {
+        const container = document.getElementById('playlist-list');
         try {
-            const res       = await fetch('/spotify/playlists');
-            const playlists = await res.json();
-            const container = document.getElementById('playlist-list');
-            container.innerHTML = '';
+            const res = await fetch('/spotify/playlists');
+            const data = await res.json();
 
-            if (playlists.length === 0) {
+            if (!res.ok) {
+                const retryMsg = data.retryAfter ? ` (retry in ${data.retryAfter}s)` : '';
+                container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:#e74c3c;font-style:italic;">
+                    ${res.status === 429 ? `Rate limited by Spotify${retryMsg} — open the sidebar again in a moment` : (data.error || 'Failed to load')}
+                    <br/><button onclick="playlistsLoaded=false;loadPlaylists()" style="margin-top:6px;background:none;border:1px solid var(--muted);color:var(--muted2);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:0.68rem;">Retry</button>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            if (data.length === 0) {
                 container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">No playlists found</div>`;
                 return;
             }
 
-            playlists.filter(pl => !pl.isSpotifyOwned).forEach(pl => {
+            data.filter(pl => !pl.isSpotifyOwned).forEach(pl => {
                 const item = document.createElement('div');
                 item.className = 'source-item';
                 item.dataset.source = pl.id;
@@ -874,12 +889,11 @@
                 container.appendChild(item);
             });
         } catch (e) {
-            document.getElementById('playlist-list').innerHTML =
-                `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
+            container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
         }
+
     }
 
-    loadPlaylists();
 
     // ── Infinite scroll for liked songs ───────────────────────────────────────
     async function loadMoreLikedSongs() {

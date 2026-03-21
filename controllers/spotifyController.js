@@ -1,10 +1,66 @@
+// ── Per-user in-memory cache ──────────────────────────────────────────────────
+// Keyed by userId → { [key]: { value, ts } }
+// Each key has its own TTL so fetching playlists doesn't expire liked songs.
+const userCache = new Map();
+const DEFAULT_TTL_MS = 5 * 60 * 1000;
+
+// TTL lookup — supports exact keys and key prefixes (e.g. 'likedSongs_' matches
+// 'likedSongs_0_50', 'likedSongs_50_50', etc.)
+function getTtl(key) {
+    if (key.startsWith('likedSongs'))  return 5  * 60 * 1000;
+    if (key === 'playlists')           return 5  * 60 * 1000;
+    if (key.startsWith('playlist_'))   return 10 * 60 * 1000;
+    return DEFAULT_TTL_MS;
+}
+
+function getCached(userId, key) {
+    const entry = userCache.get(userId);
+    if (!entry || !entry[key]) return null;
+    if (Date.now() - entry[key].ts > getTtl(key)) { delete entry[key]; return null; }
+    return entry[key].value;
+}
+
+function setCache(userId, key, value) {
+    const entry = userCache.get(userId) || {};
+    entry[key] = { value, ts: Date.now() };
+    userCache.set(userId, entry);
+}
+
+// Sleep helper for Retry-After
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Parse Spotify's Retry-After header — may be a relative number of seconds
+// ("2") or a full HTTP-date string ("Fri, 21 Mar 2026 05:12:32 GMT").
+// Returns milliseconds to wait, capped at 30 seconds.
+function parseRetryAfter(header) {
+    if (!header) return 2000;
+    const asSeconds = Number(header.trim());
+    if (!isNaN(asSeconds)) return Math.min(asSeconds * 1000, 30_000);
+    const future = Date.parse(header);
+    if (!isNaN(future)) return Math.min(Math.max(future - Date.now(), 0), 30_000);
+    return 2000;
+}
+
+// Spotify fetch with automatic 429 back-off (max 3 retries)
+async function spotifyFetch(url, options, retries = 3) {
+    const res = await fetch(url, options);
+    if (res.status === 429 && retries > 0) {
+        const wait = parseRetryAfter(res.headers.get('Retry-After'));
+        console.warn(`[spotify] 429 rate-limit — waiting ${wait}ms before retry (${retries} left)`);
+        await sleep(wait);
+        return spotifyFetch(url, options, retries - 1);
+    }
+    return res;
+}
+
+// Helper: convert ms to '3:45' format
 const getDashboard = async (req, res, next) => {
     try {
         const userId      = req.user.id;
         const accessToken = req.user.accessToken;
 
         // Serve from cache if fresh — avoids a Spotify call on every page reload
-        const cached = getCached(userId, 'likedSongs');
+        const cached = getCached(userId, 'likedSongs_0_50');
         if (cached) {
             console.log('[dashboard] serving liked songs from cache —', cached.length, 'songs');
             return res.render("dashboard", { user: req.user, songs: cached });
@@ -32,7 +88,7 @@ const getDashboard = async (req, res, next) => {
             spotifyUrl: item.track.external_urls.spotify,
         }));
 
-        setCache(userId, 'likedSongs', songs);
+        setCache(userId, 'likedSongs_0_50', songs);
         res.render("dashboard", { user: req.user, songs });
     } catch (error) {
         next(error);
@@ -114,57 +170,6 @@ function msToMinSec(ms) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-// ── Per-user in-memory cache ──────────────────────────────────────────────────
-// Keyed by userId → { [key]: { value, ts } }
-// Each key has its own TTL so fetching playlists doesn't expire liked songs.
-const userCache = new Map();
-const TTL = {
-    likedSongs:     5 * 60 * 1000,   // 5 min  — changes infrequently
-    playlists:      5 * 60 * 1000,   // 5 min
-    playlistTracks: 10 * 60 * 1000,  // 10 min — playlist contents change rarely
-};
-const DEFAULT_TTL_MS = 5 * 60 * 1000;
-
-function getCached(userId, key) {
-    const entry = userCache.get(userId);
-    if (!entry || !entry[key]) return null;
-    const ttl = TTL[key] ?? DEFAULT_TTL_MS;
-    if (Date.now() - entry[key].ts > ttl) { delete entry[key]; return null; }
-    return entry[key].value;
-}
-
-function setCache(userId, key, value) {
-    const entry = userCache.get(userId) || {};
-    entry[key] = { value, ts: Date.now() };
-    userCache.set(userId, entry);
-}
-
-// Sleep helper for Retry-After
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-// Parse Spotify's Retry-After header — may be a relative number of seconds
-// ("2") or a full HTTP-date string ("Fri, 21 Mar 2026 05:12:32 GMT").
-// Returns milliseconds to wait, capped at 30 seconds.
-function parseRetryAfter(header) {
-    if (!header) return 2000;
-    const asSeconds = Number(header.trim());
-    if (!isNaN(asSeconds)) return Math.min(asSeconds * 1000, 30_000);
-    const future = Date.parse(header);
-    if (!isNaN(future)) return Math.min(Math.max(future - Date.now(), 0), 30_000);
-    return 2000;
-}
-
-// Spotify fetch with automatic 429 back-off (max 3 retries)
-async function spotifyFetch(url, options, retries = 3) {
-    const res = await fetch(url, options);
-    if (res.status === 429 && retries > 0) {
-        const wait = parseRetryAfter(res.headers.get('Retry-After'));
-        console.warn(`[spotify] 429 rate-limit — waiting ${wait}ms before retry (${retries} left)`);
-        await sleep(wait);
-        return spotifyFetch(url, options, retries - 1);
-    }
-    return res;
-}
 
 const getLikedSongs = async (req, res, next) => {
     try {
@@ -223,7 +228,16 @@ const getPlaylists = async (req, res, next) => {
             const response = await spotifyFetch(url, {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
-            if (!response.ok) throw new Error(`Spotify API error: ${response.status}`);
+            if (!response.ok) {
+                // Use parseRetryAfter so HTTP-date strings are handled correctly
+                const retryMs = parseRetryAfter(response.headers?.get?.('Retry-After'));
+                const retrySec = Math.ceil(retryMs / 1000);
+                const msg = response.status === 429
+                    ? 'Rate limited by Spotify'
+                    : `Spotify API error: ${response.status}`;
+                console.error(`[playlists] ${response.status} — ${msg} (retry in ${retrySec}s)`);
+                return res.status(response.status).json({ error: msg, retryAfter: retrySec });
+            }
             const data = await response.json();
             console.log('[playlists] page — total:', data.total, 'items:', data.items?.length, 'next:', data.next);
             playlists = playlists.concat(

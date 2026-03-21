@@ -16,6 +16,30 @@
             <div class="header-left">
                 <a href="/spotify/dashboard" class="logo">EndAuxRacism</a>
                 <% if (isHost) { %><span class="host-badge">HOST</span><% } %>
+                <div
+                    class="room-id-pill"
+                    id="copy-room-link"
+                    title="Copy invite link"
+                >
+                    <div class="listener-dot"></div>
+                    <span id="listener-label">1 listener</span>
+                    <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        style="margin-left: 4px; color: var(--muted)"
+                    >
+                        <path
+                            d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+                        />
+                        <path
+                            d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+                        />
+                    </svg>
+                </div>
             </div>
 
             <div class="header-right">
@@ -48,31 +72,6 @@
                     <% } %>
                     <span><%= user.displayName %></span>
                 </div>
-                <div
-                    class="room-id-pill"
-                    id="copy-room-link"
-                    title="Copy invite link"
-                >
-                    <div class="listener-dot"></div>
-                    <span id="listener-label">1 listener</span>
-                    <svg
-                        width="11"
-                        height="11"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        style="margin-left: 4px; color: var(--muted)"
-                    >
-                        <path
-                            d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-                        />
-                        <path
-                            d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-                        />
-                    </svg>
-                </div>
-
                 <a href="/logout" class="btn-text">log out</a>
                 <% } else { %>
                 <button
@@ -440,6 +439,14 @@
                 />
             </div>
             <div class="player-bar-right">
+                <span
+                    id="sdk-status-bar"
+                    style="
+                        font-size: 0.65rem;
+                        color: var(--muted);
+                        white-space: nowrap;
+                    "
+                ></span>
                 <button id="btn-queue-toggle">
                     <svg
                         width="15"
@@ -847,8 +854,14 @@
                 backdrop.classList.remove('visible');
             }
 
+            let playlistsLoaded = false;
             libToggle.addEventListener('click', () => {
-                sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                    if (!playlistsLoaded) { playlistsLoaded = true; loadPlaylists(); }
+                }
             });
             backdrop.addEventListener('click', closeSidebar);
 
@@ -913,16 +926,26 @@
 
             // Load playlists
             async function loadPlaylists() {
+                const container = document.getElementById('playlist-list');
                 try {
-                    const res       = await fetch('/spotify/playlists');
-                    const playlists = await res.json();
-                    const container = document.getElementById('playlist-list');
+                    const res  = await fetch('/spotify/playlists');
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        const retryMsg = data.retryAfter ? ` (retry in ${data.retryAfter}s)` : '';
+                        container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:#e74c3c;font-style:italic;">
+                            ${res.status === 429 ? `Rate limited by Spotify${retryMsg} — open the sidebar again in a moment` : (data.error || 'Failed to load')}
+                            <br/><button onclick="playlistsLoaded=false;loadPlaylists()" style="margin-top:6px;background:none;border:1px solid var(--muted);color:var(--muted2);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:0.68rem;">Retry</button>
+                        </div>`;
+                        return;
+                    }
+
                     container.innerHTML = '';
-                    if (playlists.length === 0) {
+                    if (data.length === 0) {
                         container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">No playlists found</div>`;
                         return;
                     }
-                    playlists.filter(pl => !pl.isSpotifyOwned).forEach(pl => {
+                    data.filter(pl => !pl.isSpotifyOwned).forEach(pl => {
                         const item = document.createElement('div');
                         item.className = 'source-item';
                         item.dataset.source = pl.id;
@@ -936,12 +959,11 @@
                         container.appendChild(item);
                     });
                 } catch (e) {
-                    document.getElementById('playlist-list').innerHTML =
-                        `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
+                    container.innerHTML = `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
                 }
+
             }
 
-            loadPlaylists();
 
             // ── Infinite scroll ───────────────────────────────────────────────────────
             async function loadMoreLikedSongs() {
@@ -1472,27 +1494,25 @@
             function makeQueueItem(song, index, queueType) {
                 const item = document.createElement('div');
                 item.className = 'queue-item';
+                item.draggable = true;
                 item.dataset.index     = index;
                 item.dataset.queueType = queueType;
-                // item itself is NOT draggable — only the handle triggers drag
                 item.innerHTML = `
-                    <button class="btn-remove-queue" title="Remove">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M18 6 6 18M6 6l12 12"/>
+                    <div class="drag-handle">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                         </svg>
-                    </button>
-                    ${song.image
-                        ? `<img class="q-art" src="${song.image}" alt="" draggable="false" />`
-                        : `<div class="q-art-placeholder"></div>`}
+                    </div>
+                    ${song.image ? `<img class="q-art" src="${song.image}" alt="" />` : `<div class="q-art-placeholder"></div>`}
                     <div class="q-info">
                         <div class="q-name">${song.name}</div>
                         <div class="q-artist">${song.artist}</div>
                     </div>
-                    <div class="drag-handle" draggable="true" title="Drag to reorder">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
-                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    <button class="btn-remove-queue" title="Remove">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6 6 18M6 6l12 12"/>
                         </svg>
-                    </div>`;
+                    </button>`;
                 item.querySelector('.btn-remove-queue').addEventListener('click', (e) => {
                     e.stopPropagation();
                     socket.emit('queue-remove', { roomId, queueType: item.dataset.queueType, index: parseInt(item.dataset.index) });
@@ -1542,49 +1562,9 @@
             (function initDrag() {
                 const body = document.getElementById('drawer-body');
 
-                // ── Auto-scroll state ─────────────────────────────────────────
-                const SCROLL_ZONE  = 120; // px from drawer edge to trigger scroll
-                const SCROLL_SPEED = 18;  // max px per frame at the very edge
-                let scrollRaf = null;
-                let autoScrollDir = 0;
-                let autoScrollSpeed = 0;
-
-                function startAutoScroll(clientY) {
-                    const rect = body.getBoundingClientRect();
-                    const distFromTop    = clientY - rect.top;
-                    const distFromBottom = rect.bottom - clientY;
-
-                    let dir = 0;
-                    let dist = 0;
-                    if (distFromTop < SCROLL_ZONE)    { dir = -1; dist = distFromTop; }
-                    if (distFromBottom < SCROLL_ZONE) { dir =  1; dist = distFromBottom; }
-
-                    // Update speed/dir so the running rAF loop picks them up
-                    autoScrollDir   = dir;
-                    autoScrollSpeed = dir === 0 ? 0
-                        : SCROLL_SPEED * Math.pow(1 - dist / SCROLL_ZONE, 1.5);
-
-                    if (dir !== 0 && !scrollRaf) {
-                        function step() {
-                            if (autoScrollDir === 0) { scrollRaf = null; return; }
-                            body.scrollTop += autoScrollDir * Math.max(1, autoScrollSpeed);
-                            scrollRaf = requestAnimationFrame(step);
-                        }
-                        scrollRaf = requestAnimationFrame(step);
-                    }
-                }
-
-                function stopAutoScroll() {
-                    autoScrollDir = 0; autoScrollSpeed = 0;
-                    if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
-                }
-
                 // ── Mouse drag (desktop) ──────────────────────────────────────
                 body.addEventListener('dragstart', (e) => {
-                    // Only allow drag when starting from the handle
-                    const handle = e.target.closest('.drag-handle');
-                    if (!handle) { e.preventDefault(); return; }
-                    const item = handle.closest('.queue-item');
+                    const item = e.target.closest('.queue-item');
                     if (!item) return;
                     dragSrc = item; isDragging = true;
                     e.dataTransfer.effectAllowed = 'move';
@@ -1593,7 +1573,6 @@
                 });
 
                 body.addEventListener('dragend', () => {
-                    stopAutoScroll();
                     document.querySelectorAll('.queue-item.dragging').forEach(el => el.classList.remove('dragging'));
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
                     dragSrc = null; dragOverItem = null; isDragging = false;
@@ -1601,7 +1580,6 @@
 
                 body.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    startAutoScroll(e.clientY); // auto-scroll when near edges
                     const item = e.target.closest('.queue-item');
                     if (!item || item === dragSrc) return;
                     if (item !== dragOverItem) {
@@ -1620,7 +1598,6 @@
 
                 body.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    stopAutoScroll();
                     const target = e.target.closest('.queue-item');
                     isDragging = false;
                     commitDrop(dragSrc, target);
@@ -1628,6 +1605,9 @@
                 });
 
                 // ── Touch drag (mobile) ───────────────────────────────────────
+                // We create a floating clone that follows the finger so the user
+                // gets visual feedback, then on touchend we hit-test to find the
+                // target item underneath.
                 let touchClone = null;
                 let touchSrc   = null;
                 let touchOffsetX = 0, touchOffsetY = 0;
@@ -1645,6 +1625,7 @@
                     touchOffsetX = touch.clientX - rect.left;
                     touchOffsetY = touch.clientY - rect.top;
 
+                    // Build a visual clone
                     touchClone = item.cloneNode(true);
                     touchClone.style.cssText = `
                         position: fixed;
@@ -1661,20 +1642,17 @@
                     `;
                     document.body.appendChild(touchClone);
                     item.classList.add('dragging');
-                }, { passive: false });
+                }, { passive: true });
 
                 body.addEventListener('touchmove', (e) => {
                     if (!touchSrc || !touchClone) return;
-                    e.preventDefault();
+                    e.preventDefault(); // stop page scroll while dragging
 
                     const touch = e.touches[0];
                     touchClone.style.left = `${touch.clientX - touchOffsetX}px`;
                     touchClone.style.top  = `${touch.clientY - touchOffsetY}px`;
 
-                    // Auto-scroll drawer when near edges
-                    startAutoScroll(touch.clientY);
-
-                    // Highlight item under finger
+                    // Highlight the item currently under the finger
                     touchClone.style.display = 'none';
                     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
                     touchClone.style.display = '';
@@ -1694,12 +1672,13 @@
 
                 body.addEventListener('touchend', (e) => {
                     if (!touchSrc) return;
-                    stopAutoScroll();
 
+                    // Clean up clone and highlight
                     touchClone?.remove(); touchClone = null;
                     touchSrc.classList.remove('dragging');
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
 
+                    // Hit-test for drop target
                     const touch = e.changedTouches[0];
                     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
                     const target  = elUnder?.closest('.queue-item');
@@ -1709,7 +1688,6 @@
                 }, { passive: true });
 
                 body.addEventListener('touchcancel', () => {
-                    stopAutoScroll();
                     touchClone?.remove(); touchClone = null;
                     touchSrc?.classList.remove('dragging');
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
