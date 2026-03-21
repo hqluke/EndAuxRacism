@@ -1,45 +1,39 @@
 const getDashboard = async (req, res, next) => {
     try {
+        const userId      = req.user.id;
         const accessToken = req.user.accessToken;
 
-        // Fetch 50 most recent liked songs (more to search through)
-        const response = await fetch(
-            "https://api.spotify.com/v1/me/tracks?limit=50",
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            },
-        );
-
-        if (!response.ok) {
-            throw new Error(`Spotify API error: ${response.status}`);
+        // Serve from cache if fresh — avoids a Spotify call on every page reload
+        const cached = getCached(userId, 'likedSongs');
+        if (cached) {
+            console.log('[dashboard] serving liked songs from cache —', cached.length, 'songs');
+            return res.render("dashboard", { user: req.user, songs: cached });
         }
 
-        const data = await response.json();
+        const response = await spotifyFetch(
+            "https://api.spotify.com/v1/me/tracks?limit=50",
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
 
+        if (!response.ok) throw new Error(`Spotify API error: ${response.status}`);
+
+        const data = await response.json();
         const songs = data.items.map((item) => ({
-            id: item.track.id,
-            uri: item.track.uri,
-            name: item.track.name,
-            artist: item.track.artists.map((a) => a.name).join(", "),
-            album: item.track.album.name,
-            image:
-                item.track.album.images[1]?.url ||
-                item.track.album.images[0]?.url,
+            id:       item.track.id,
+            uri:      item.track.uri,
+            name:     item.track.name,
+            artist:   item.track.artists.map((a) => a.name).join(", "),
+            album:    item.track.album.name,
+            image:    item.track.album.images[1]?.url || item.track.album.images[0]?.url,
             duration: msToMinSec(item.track.duration_ms),
-            addedAt: new Date(item.added_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
+            addedAt:  new Date(item.added_at).toLocaleDateString("en-US", {
+                month: "short", day: "numeric", year: "numeric",
             }),
             spotifyUrl: item.track.external_urls.spotify,
         }));
 
-        res.render("dashboard", {
-            user: req.user,
-            songs,
-        });
+        setCache(userId, 'likedSongs', songs);
+        res.render("dashboard", { user: req.user, songs });
     } catch (error) {
         next(error);
     }
@@ -120,74 +114,159 @@ function msToMinSec(ms) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+// ── Per-user in-memory cache ──────────────────────────────────────────────────
+// Keyed by userId → { [key]: { value, ts } }
+// Each key has its own TTL so fetching playlists doesn't expire liked songs.
+const userCache = new Map();
+const TTL = {
+    likedSongs:     5 * 60 * 1000,   // 5 min  — changes infrequently
+    playlists:      5 * 60 * 1000,   // 5 min
+    playlistTracks: 10 * 60 * 1000,  // 10 min — playlist contents change rarely
+};
+const DEFAULT_TTL_MS = 5 * 60 * 1000;
+
+function getCached(userId, key) {
+    const entry = userCache.get(userId);
+    if (!entry || !entry[key]) return null;
+    const ttl = TTL[key] ?? DEFAULT_TTL_MS;
+    if (Date.now() - entry[key].ts > ttl) { delete entry[key]; return null; }
+    return entry[key].value;
+}
+
+function setCache(userId, key, value) {
+    const entry = userCache.get(userId) || {};
+    entry[key] = { value, ts: Date.now() };
+    userCache.set(userId, entry);
+}
+
+// Sleep helper for Retry-After
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Parse Spotify's Retry-After header — may be a relative number of seconds
+// ("2") or a full HTTP-date string ("Fri, 21 Mar 2026 05:12:32 GMT").
+// Returns milliseconds to wait, capped at 30 seconds.
+function parseRetryAfter(header) {
+    if (!header) return 2000;
+    const asSeconds = Number(header.trim());
+    if (!isNaN(asSeconds)) return Math.min(asSeconds * 1000, 30_000);
+    const future = Date.parse(header);
+    if (!isNaN(future)) return Math.min(Math.max(future - Date.now(), 0), 30_000);
+    return 2000;
+}
+
+// Spotify fetch with automatic 429 back-off (max 3 retries)
+async function spotifyFetch(url, options, retries = 3) {
+    const res = await fetch(url, options);
+    if (res.status === 429 && retries > 0) {
+        const wait = parseRetryAfter(res.headers.get('Retry-After'));
+        console.warn(`[spotify] 429 rate-limit — waiting ${wait}ms before retry (${retries} left)`);
+        await sleep(wait);
+        return spotifyFetch(url, options, retries - 1);
+    }
+    return res;
+}
+
 const getLikedSongs = async (req, res, next) => {
     try {
-        const { offset = 0, limit = 50 } = req.query;
-        const response = await fetch(
+        const userId        = req.user.id;
+        const offset        = parseInt(req.query.offset ?? 0, 10);
+        const limit         = parseInt(req.query.limit  ?? 50, 10);
+
+        // Only cache the first page (offset=0) — it's the one fetched on every
+        // dashboard load and room join. Scroll pages are cheap one-offs.
+        const cacheKey = `likedSongs_${offset}_${limit}`;
+        const cached = getCached(userId, cacheKey);
+        if (cached) {
+            console.log(`[liked] serving offset=${offset} from cache — ${cached.length} songs`);
+            return res.json(cached);
+        }
+
+        const response = await spotifyFetch(
             `https://api.spotify.com/v1/me/tracks?offset=${offset}&limit=${limit}`,
             { headers: { Authorization: `Bearer ${req.user.accessToken}` } },
         );
+        if (!response.ok) throw new Error(`Spotify API error: ${response.status}`);
         const data = await response.json();
         const songs = data.items.map((item) => ({
-            id: item.track.id,
-            uri: item.track.uri,
-            name: item.track.name,
+            id:     item.track.id,
+            uri:    item.track.uri,
+            name:   item.track.name,
             artist: item.track.artists.map((a) => a.name).join(", "),
-            album: item.track.album.name,
-            image:
-                item.track.album.images[1]?.url ||
-                item.track.album.images[0]?.url,
+            album:  item.track.album.name,
+            image:  item.track.album.images[1]?.url || item.track.album.images[0]?.url,
         }));
+
+        setCache(userId, cacheKey, songs);
         res.json(songs);
     } catch (err) {
         next(err);
     }
 };
 
-// Fetch all of the user's playlists (paginated, returns everything)
+// Fetch all of the user's playlists (paginated, cached per user for 5 min)
 const getPlaylists = async (req, res, next) => {
     try {
+        const userId      = req.user.id;
         const accessToken = req.user.accessToken;
+
+        // Return cached result if fresh
+        const cached = getCached(userId, 'playlists');
+        if (cached) {
+            console.log('[playlists] serving from cache —', cached.length, 'playlists');
+            return res.json(cached);
+        }
+
         let playlists = [];
         let url = 'https://api.spotify.com/v1/me/playlists?limit=50';
 
         while (url) {
-            const response = await fetch(url, {
+            const response = await spotifyFetch(url, {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             if (!response.ok) throw new Error(`Spotify API error: ${response.status}`);
             const data = await response.json();
             console.log('[playlists] page — total:', data.total, 'items:', data.items?.length, 'next:', data.next);
-            playlists = playlists.concat((data.items || []).filter(p => p != null).map(p => ({
-                id:          p.id,
-                name:        p.name,
-                description: p.description || '',
-                trackCount:  p.tracks?.total ?? 0,
-                image:       p.images?.[0]?.url || null,
-                owner:          p.owner?.display_name || '',
-                isSpotifyOwned: p.owner?.id === 'spotify',
-            })));
+            playlists = playlists.concat(
+                (data.items || []).filter(p => p != null).map(p => ({
+                    id:             p.id,
+                    name:           p.name,
+                    description:    p.description || '',
+                    trackCount:     p.tracks?.total ?? 0,
+                    image:          p.images?.[0]?.url || null,
+                    owner:          p.owner?.display_name || '',
+                    isSpotifyOwned: p.owner?.id === 'spotify',
+                }))
+            );
             url = data.next || null;
         }
 
         console.log('[playlists] total returned:', playlists.length);
-
+        setCache(userId, 'playlists', playlists);
         res.json(playlists);
     } catch (err) {
         next(err);
     }
 };
 
-// Fetch all tracks for a given playlist (paginated, returns everything)
+// Fetch all tracks for a given playlist (paginated, cached per playlist per user)
 const getPlaylistTracks = async (req, res, next) => {
     try {
         const { playlistId } = req.params;
+        const userId      = req.user.id;
         const accessToken = req.user.accessToken;
+
+        const cacheKey = `playlist_${playlistId}`;
+        const cached = getCached(userId, cacheKey);
+        if (cached) {
+            console.log(`[tracks] serving playlist ${playlistId} from cache — ${cached.length} tracks`);
+            return res.json(cached);
+        }
+
         let tracks = [];
         let url = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100`;
 
         while (url) {
-            const response = await fetch(url, {
+            const response = await spotifyFetch(url, {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             if (!response.ok) {
@@ -211,6 +290,7 @@ const getPlaylistTracks = async (req, res, next) => {
             url = data.next;
         }
 
+        setCache(userId, cacheKey, tracks);
         res.json(tracks);
     } catch (err) {
         next(err);
@@ -225,4 +305,8 @@ module.exports = {
     getLikedSongs,
     getPlaylists,
     getPlaylistTracks,
+    // Exported for use by roomsController (shared cache + rate-limit-safe fetch)
+    getCached,
+    setCache,
+    spotifyFetch,
 };

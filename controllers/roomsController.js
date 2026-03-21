@@ -1,3 +1,5 @@
+const { getCached, setCache, spotifyFetch } = require("./spotifyController");
+
 const getRoom = async (req, res, next) => {
     try {
         const { roomId } = req.params;
@@ -8,23 +10,35 @@ const getRoom = async (req, res, next) => {
 
         // Only fetch Spotify songs if the user is logged in
         if (isAuthenticated) {
+            const userId      = req.user.id;
             const accessToken = req.user.accessToken;
-            const response = await fetch(
-                "https://api.spotify.com/v1/me/tracks?limit=50",
-                { headers: { Authorization: `Bearer ${accessToken}` } }
-            );
 
-            if (response.ok) {
-                const data = await response.json();
-                songs = data.items.map((item) => ({
-                    id:       item.track.id,
-                    uri:      item.track.uri,
-                    name:     item.track.name,
-                    artist:   item.track.artists.map((a) => a.name).join(", "),
-                    album:    item.track.album.name,
-                    image:    item.track.album.images[1]?.url || item.track.album.images[0]?.url || null,
-                    duration: msToMinSec(item.track.duration_ms),
-                }));
+            // Re-use the same cache as the dashboard — avoids a redundant Spotify
+            // call when the user navigates from dashboard → room within 5 minutes.
+            const cacheKey = 'likedSongs_0_50';
+            const cached = getCached(userId, cacheKey);
+            if (cached) {
+                console.log('[room] serving liked songs from cache —', cached.length, 'songs');
+                songs = cached;
+            } else {
+                const response = await spotifyFetch(
+                    "https://api.spotify.com/v1/me/tracks?limit=50",
+                    { headers: { Authorization: `Bearer ${accessToken}` } }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    songs = data.items.map((item) => ({
+                        id:       item.track.id,
+                        uri:      item.track.uri,
+                        name:     item.track.name,
+                        artist:   item.track.artists.map((a) => a.name).join(", "),
+                        album:    item.track.album.name,
+                        image:    item.track.album.images[1]?.url || item.track.album.images[0]?.url || null,
+                        duration: msToMinSec(item.track.duration_ms),
+                    }));
+                    setCache(userId, cacheKey, songs);
+                }
             }
         }
 

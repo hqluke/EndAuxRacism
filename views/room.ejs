@@ -1543,31 +1543,39 @@
                 const body = document.getElementById('drawer-body');
 
                 // ── Auto-scroll state ─────────────────────────────────────────
-                const SCROLL_ZONE = 80;  // px from edge to start scrolling
-                const SCROLL_SPEED = 8;  // px per frame
+                const SCROLL_ZONE  = 120; // px from drawer edge to trigger scroll
+                const SCROLL_SPEED = 18;  // max px per frame at the very edge
                 let scrollRaf = null;
+                let autoScrollDir = 0;
+                let autoScrollSpeed = 0;
 
                 function startAutoScroll(clientY) {
-                    stopAutoScroll();
                     const rect = body.getBoundingClientRect();
                     const distFromTop    = clientY - rect.top;
                     const distFromBottom = rect.bottom - clientY;
 
                     let dir = 0;
-                    if (distFromTop < SCROLL_ZONE)    dir = -1; // scroll up
-                    if (distFromBottom < SCROLL_ZONE) dir =  1; // scroll down
-                    if (dir === 0) return;
+                    let dist = 0;
+                    if (distFromTop < SCROLL_ZONE)    { dir = -1; dist = distFromTop; }
+                    if (distFromBottom < SCROLL_ZONE) { dir =  1; dist = distFromBottom; }
 
-                    const speed = SCROLL_SPEED * (1 - Math.min(distFromTop, distFromBottom) / SCROLL_ZONE);
+                    // Update speed/dir so the running rAF loop picks them up
+                    autoScrollDir   = dir;
+                    autoScrollSpeed = dir === 0 ? 0
+                        : SCROLL_SPEED * Math.pow(1 - dist / SCROLL_ZONE, 1.5);
 
-                    function step() {
-                        body.scrollTop += dir * Math.max(1, speed);
+                    if (dir !== 0 && !scrollRaf) {
+                        function step() {
+                            if (autoScrollDir === 0) { scrollRaf = null; return; }
+                            body.scrollTop += autoScrollDir * Math.max(1, autoScrollSpeed);
+                            scrollRaf = requestAnimationFrame(step);
+                        }
                         scrollRaf = requestAnimationFrame(step);
                     }
-                    scrollRaf = requestAnimationFrame(step);
                 }
 
                 function stopAutoScroll() {
+                    autoScrollDir = 0; autoScrollSpeed = 0;
                     if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
                 }
 
@@ -1653,7 +1661,7 @@
                     `;
                     document.body.appendChild(touchClone);
                     item.classList.add('dragging');
-                }, { passive: true });
+                }, { passive: false });
 
                 body.addEventListener('touchmove', (e) => {
                     if (!touchSrc || !touchClone) return;
