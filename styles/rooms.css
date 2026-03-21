@@ -1821,11 +1821,11 @@ body.drawer-open #player-bar {
     }
 }
 
-/* ── Sidebar mobile (≤600px): fixed overlay beneath header ── */
+/* ── Sidebar mobile (≤600px): full-height overlay like dashboard ── */
 @media (max-width: 600px) {
     :root {
         --drawer-w: 100vw;
-        --sidebar-w: 100vw;
+        --sidebar-w: 85vw;
     }
     header {
         padding: 16px 20px;
@@ -1836,15 +1836,44 @@ body.drawer-open #player-bar {
     }
     #library-sidebar {
         position: fixed;
-        top: 73px;
+        top: 0;
         left: 0;
-        z-index: 80;
-        height: calc(100vh - 73px - var(--player-h));
+        z-index: 200;
+        height: 100vh;
+        width: var(--sidebar-w) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    #library-sidebar.collapsed {
+        transform: translateX(-100%);
+        pointer-events: none !important;
+    }
     #library-sidebar.open {
         transform: translateX(0);
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        width: var(--sidebar-w) !important;
+    }
+    /* Backdrop covers full height, right of the sidebar */
+    #sidebar-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: var(--sidebar-w);
+        right: 0;
+        z-index: 199;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+    #sidebar-backdrop.visible {
+        opacity: 1;
+        pointer-events: auto;
     }
     .volume-wrap {
         display: none;
