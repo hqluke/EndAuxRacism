@@ -6,404 +6,16 @@
     <title>EndAuxRacism — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg: #0a0a0a;
-            --surface: #111111;
-            --surface2: #1a1a1a;
-            --surface3: #202020;
-            --border: #222222;
-            --green: #1db954;
-            --green-dim: #1aa34a;
-            --text: #f0f0f0;
-            --muted: #555;
-            --muted2: #888;
-            --player-h: 88px;
-            --drawer-w: 340px;
-            --sidebar-w: 240px;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'DM Mono', monospace;
-            min-height: 100vh;
-            padding-bottom: calc(var(--player-h) + 24px);
-            overflow-x: hidden;
-        }
-
-        /* ── Header ── */
-        header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 24px 40px; border-bottom: 1px solid var(--border);
-            position: sticky; top: 0;
-            background: rgba(10,10,10,0.9); backdrop-filter: blur(12px); z-index: 10;
-        }
-
-        .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.03em; color: var(--green); }
-
-        .user-pill {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--surface2); border: 1px solid var(--border);
-            border-radius: 100px; padding: 6px 16px 6px 6px;
-        }
-        .user-pill img, .avatar-placeholder { width: 28px; height: 28px; border-radius: 50%; }
-        .user-pill img { object-fit: cover; }
-        .avatar-placeholder { background: var(--green); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: #000; }
-        .user-pill span { font-size: 0.8rem; color: var(--muted2); }
-        .logout-btn { color: var(--muted); text-decoration: none; font-size: 0.75rem; letter-spacing: 0.05em; transition: color 0.2s; }
-        .logout-btn:hover { color: var(--text); }
-
-        .btn-start-room {
-            display: inline-flex; align-items: center; gap: 7px;
-            background: var(--green); color: #000;
-            font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem;
-            text-decoration: none; padding: 8px 18px; border-radius: 100px;
-            transition: background 0.2s, transform 0.1s; letter-spacing: -0.01em;
-        }
-        .btn-start-room:hover { background: var(--green-dim); transform: scale(1.03); }
-
-        /* ── Layout ── */
-        .layout {
-            display: flex;
-            min-height: calc(100vh - 73px); /* below header */
-        }
-
-        /* ── Left Sidebar ── */
-        #library-sidebar {
-            width: var(--sidebar-w);
-            flex-shrink: 0;
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            position: sticky;
-            top: 73px; /* header height */
-            height: calc(100vh - 73px - var(--player-h));
-            overflow: hidden;
-            transition: width 0.3s cubic-bezier(0.4,0,0.2,1),
-                        opacity 0.3s;
-        }
-        #library-sidebar.collapsed {
-            width: 0;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .sidebar-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 16px 12px;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-        .sidebar-title {
-            font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
-            letter-spacing: -0.01em;
-        }
-
-        .sidebar-body { flex: 1; overflow-y: auto; padding: 8px 0; }
-        .sidebar-body::-webkit-scrollbar { width: 3px; }
-        .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        /* Source items in sidebar */
-        .source-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 14px; cursor: pointer;
-            border-radius: 6px; margin: 0 6px 2px;
-            border: 1px solid transparent;
-            transition: background 0.12s;
-            min-width: 0;
-        }
-        .source-item:hover { background: var(--surface2); }
-        .source-item.active { background: var(--surface2); border-color: var(--border); }
-        .source-item.active .source-name { color: var(--green); }
-
-        .source-art {
-            width: 36px; height: 36px; border-radius: 4px;
-            object-fit: cover; flex-shrink: 0;
-            background: var(--surface2); border: 1px solid var(--border);
-        }
-        .source-art-placeholder {
-            width: 36px; height: 36px; border-radius: 4px; flex-shrink: 0;
-            background: var(--surface3); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--muted);
-        }
-        .source-info { overflow: hidden; flex: 1; min-width: 0; }
-        .source-name {
-            font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.78rem;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .source-meta { font-size: 0.65rem; color: var(--muted2); margin-top: 1px; }
-
-        .sidebar-section-label {
-            font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted);
-            padding: 10px 14px 4px; text-transform: uppercase;
-        }
-
-        /* Liked Songs special item */
-        .source-item.liked .source-art-placeholder {
-            background: linear-gradient(135deg, #450af5, #c4efd9);
-        }
-
-        /* Sidebar toggle button (in header) */
-        #btn-library-toggle {
-            background: none; border: 1px solid var(--border); border-radius: 8px;
-            color: var(--muted2); cursor: pointer; padding: 6px 10px;
-            font-family: 'DM Mono', monospace; font-size: 0.7rem;
-            display: flex; align-items: center; gap: 6px;
-            transition: all 0.15s; flex-shrink: 0;
-        }
-        #btn-library-toggle:hover { color: var(--text); border-color: var(--muted2); }
-        #btn-library-toggle.active { color: var(--green); border-color: var(--green); }
-
-        /* ── Main ── */
-        main {
-            flex: 1;
-            min-width: 0;
-            padding: 48px 32px 0;
-            transition: margin-right 0.35s cubic-bezier(0.4,0,0.2,1);
-        }
-        body.drawer-open main { margin-right: var(--drawer-w); }
-
-        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
-        .header-left { display: flex; align-items: baseline; gap: 12px; }
-        .header-left h1 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.6rem; letter-spacing: -0.02em; }
-        .count { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
-
-        /* ── Search ── */
-        .search-wrap { position: relative; display: flex; align-items: center; }
-        .search-wrap svg { position: absolute; left: 10px; color: var(--muted); pointer-events: none; }
-        #search {
-            background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-            color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
-            padding: 7px 12px 7px 32px; outline: none; width: 200px;
-            transition: border-color 0.2s, width 0.3s;
-        }
-        #search::placeholder { color: var(--muted); }
-        #search:focus { border-color: var(--green); width: 260px; }
-
-        /* ── Song List ── */
-        .song-list { display: flex; flex-direction: column; gap: 2px; }
-
-        .song-row {
-            display: grid;
-            grid-template-columns: 32px 48px 1fr auto 90px;
-            align-items: center; gap: 16px; padding: 10px 16px;
-            border-radius: 8px; border: 1px solid transparent;
-            transition: background 0.15s; animation: fadeUp 0.4s ease both;
-        }
-        .song-row:hover { background: var(--surface2); border-color: var(--border); }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .song-index { font-size: 0.75rem; color: var(--muted); text-align: center; }
-        .song-art { width: 48px; height: 48px; border-radius: 4px; object-fit: cover; }
-        .song-art-placeholder { width: 48px; height: 48px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); }
-        .song-info { overflow: hidden; }
-        .song-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .song-artist { font-size: 0.75rem; color: var(--muted2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .song-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-        .song-duration { font-size: 0.75rem; color: var(--muted2); }
-        .song-added { font-size: 0.65rem; color: var(--muted); }
-
-        .row-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; }
-        .song-row:hover .row-actions { opacity: 1; }
-
-        .btn-play, .btn-queue {
-            border: none; border-radius: 6px; cursor: pointer;
-            font-family: 'DM Mono', monospace; font-size: 0.65rem;
-            padding: 5px 8px; transition: background 0.15s, transform 0.1s;
-        }
-        .btn-play { background: var(--green); color: #000; font-weight: 600; }
-        .btn-play:hover { background: var(--green-dim); transform: scale(1.05); }
-        .btn-queue { background: var(--surface); color: var(--muted2); border: 1px solid var(--border); }
-        .btn-queue:hover { color: var(--text); border-color: var(--muted2); }
-
-        .match { color: var(--green); }
-        .no-results { text-align: center; padding: 48px 0; color: var(--muted); font-size: 0.8rem; display: none; }
-        .empty { text-align: center; padding: 80px 0; color: var(--muted); }
-        .empty p { font-size: 0.9rem; margin-top: 8px; }
-
-        /* ── Player Bar ── */
-        #player-bar {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            height: var(--player-h);
-            background: rgba(15,15,15,0.97); border-top: 1px solid var(--border);
-            backdrop-filter: blur(16px);
-            display: flex; align-items: center; padding: 0 32px; gap: 24px; z-index: 100;
-            transition: right 0.35s cubic-bezier(0.4,0,0.2,1),
-                        left 0.3s cubic-bezier(0.4,0,0.2,1);
-        }
-        body.drawer-open #player-bar { right: var(--drawer-w); }
-
-        .now-playing { display: flex; align-items: center; gap: 12px; width: 220px; min-width: 0; }
-        #np-art { width: 48px; height: 48px; border-radius: 4px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
-        .np-text { overflow: hidden; }
-        #np-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #np-artist { font-size: 0.7rem; color: var(--muted2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .player-controls { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .control-btns { display: flex; align-items: center; gap: 20px; }
-
-        .ctrl-btn {
-            background: none; border: none; color: var(--muted2); cursor: pointer;
-            padding: 4px; transition: color 0.15s, transform 0.1s; display: flex; align-items: center;
-        }
-        .ctrl-btn:hover { color: var(--text); transform: scale(1.1); }
-
-        #btn-play-pause {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: var(--text); color: #000;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.15s, transform 0.1s;
-        }
-        #btn-play-pause:hover { background: var(--green); transform: scale(1.08); }
-
-        .progress-wrap { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 480px; }
-        .time-label { font-size: 0.65rem; color: var(--muted); width: 32px; }
-        .time-label.right { text-align: right; }
-
-        #progress-bar { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; cursor: pointer; position: relative; }
-        #progress-fill { height: 100%; background: var(--green); border-radius: 2px; width: 0%; transition: width 0.5s linear; pointer-events: none; }
-
-        .volume-wrap { display: flex; align-items: center; gap: 8px; width: 120px; }
-        .volume-wrap svg { color: var(--muted2); flex-shrink: 0; }
-        #volume-slider { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; outline: none; cursor: pointer; }
-        #volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--text); cursor: pointer; }
-
-        /* Queue button in player bar */
-        #btn-queue-toggle {
-            background: none; border: 1px solid var(--border); border-radius: 8px;
-            color: var(--muted2); cursor: pointer; padding: 6px 10px;
-            font-family: 'DM Mono', monospace; font-size: 0.7rem;
-            display: flex; align-items: center; gap: 6px;
-            transition: all 0.15s; flex-shrink: 0;
-        }
-        #btn-queue-toggle:hover { color: var(--text); border-color: var(--muted2); }
-        #btn-queue-toggle.active { color: var(--green); border-color: var(--green); }
-
-        #sdk-status { font-size: 0.65rem; color: var(--muted); text-align: center; padding: 4px 0; }
-        #sdk-status.ready { color: var(--green); }
-        #sdk-status.error { color: #e74c3c; }
-
-        /* ── Queue Drawer ── */
-        #queue-drawer {
-            position: fixed; top: 0; right: 0; bottom: var(--player-h);
-            width: var(--drawer-w);
-            background: var(--surface);
-            border-left: 1px solid var(--border);
-            display: flex; flex-direction: column;
-            transform: translateX(100%);
-            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-            z-index: 90;
-            overflow: hidden;
-        }
-        #queue-drawer.open { transform: translateX(0); }
-
-        .drawer-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-        .drawer-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
-
-        #btn-close-drawer {
-            background: none; border: none; color: var(--muted2); cursor: pointer;
-            padding: 4px; transition: color 0.15s;
-        }
-        #btn-close-drawer:hover { color: var(--text); }
-
-        .drawer-body { flex: 1; overflow-y: auto; padding: 12px 0; }
-        .drawer-body::-webkit-scrollbar { width: 4px; }
-        .drawer-body::-webkit-scrollbar-track { background: transparent; }
-        .drawer-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        .queue-section-label {
-            font-size: 0.65rem; letter-spacing: 0.1em; color: var(--muted);
-            padding: 8px 20px 6px; text-transform: uppercase;
-        }
-
-        .queue-empty-hint {
-            font-size: 0.75rem; color: var(--muted); padding: 8px 20px;
-            font-style: italic;
-        }
-
-        /* ── Queue Item ── */
-        .queue-item {
-            display: grid;
-            grid-template-columns: 20px 36px 1fr 24px;
-            align-items: center; gap: 10px;
-            padding: 8px 20px; cursor: grab;
-            border: 1px solid transparent; border-radius: 6px; margin: 0 8px 2px;
-            transition: background 0.12s;
-            touch-action: none;
-            user-select: none;
-        }
-        .queue-item:hover { background: var(--surface2); border-color: var(--border); }
-        .queue-item.dragging { opacity: 0.4; }
-        .queue-item.drag-over { border-color: var(--green) !important; background: rgba(29,185,84,0.07); }
-
-        .drag-handle { color: var(--muted); display: flex; align-items: center; cursor: grab; }
-        .drag-handle:active { cursor: grabbing; }
-
-        .q-art { width: 36px; height: 36px; border-radius: 3px; object-fit: cover; }
-        .q-art-placeholder { width: 36px; height: 36px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border); }
-
-        .q-info { overflow: hidden; }
-        .q-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .q-artist { font-size: 0.68rem; color: var(--muted2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .btn-remove-queue {
-            background: none; border: none; color: var(--muted); cursor: pointer;
-            padding: 2px; opacity: 0; transition: opacity 0.15s, color 0.15s;
-            display: flex; align-items: center;
-        }
-        .queue-item:hover .btn-remove-queue { opacity: 1; }
-        .btn-remove-queue:hover { color: #e74c3c; }
-
-        /* Now playing indicator in drawer */
-        .now-playing-row {
-            display: grid;
-            grid-template-columns: 20px 36px 1fr;
-            align-items: center; gap: 10px;
-            padding: 8px 20px; margin: 0 8px 2px;
-            border-radius: 6px; background: rgba(29,185,84,0.08);
-            border: 1px solid rgba(29,185,84,0.2);
-        }
-        .now-playing-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-        /* Mobile responsive */
-        @media (max-width: 600px) {
-            :root { --drawer-w: 100vw; --sidebar-w: 100vw; }
-            header { padding: 16px 20px; }
-            main { padding: 24px 12px 0; }
-            .song-row { grid-template-columns: 24px 40px 1fr 80px; }
-            .song-meta { display: none; }
-            #player-bar { padding: 0 16px; gap: 12px; }
-            .now-playing { width: 140px; }
-            .volume-wrap { display: none; }
-            #library-sidebar {
-                position: fixed; top: 73px; left: 0; z-index: 80;
-                height: calc(100vh - 73px - var(--player-h));
-                transform: translateX(-100%);
-                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-            }
-            #library-sidebar:not(.collapsed) { transform: translateX(0); }
-        }
-    </style>
+    <link rel="stylesheet" href="/rooms.css" />
+    <link rel="stylesheet" href="/dashboard.css" />
 </head>
 <body>
 
 <header>
-    <div class="logo">EndAuxRacism</div>
-    <div style="display:flex;align-items:center;gap:12px;">
+    <div class="header-left">
+        <a href="/spotify/dashboard" class="logo">EndAuxRacism</a>
+    </div>
+    <div class="header-right">
         <button id="btn-library-toggle" class="active" title="Toggle library">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
@@ -419,12 +31,17 @@
             <span><%= user.displayName %></span>
         </div>
         <a href="/rooms/<%= user.id %>" class="btn-start-room">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+            </svg>
             Start Room
         </a>
-        <a href="/logout" class="logout-btn">log out</a>
+        <a href="/logout" class="btn-text">log out</a>
     </div>
 </header>
+
+<!-- Sidebar backdrop (mobile only) -->
+<div id="sidebar-backdrop"></div>
 
 <div class="layout">
 
@@ -443,10 +60,8 @@
             </div>
             <div class="source-info">
                 <div class="source-name">Liked Songs</div>
-                <div class="source-meta" id="liked-count">— songs</div>
             </div>
         </div>
-
         <div class="sidebar-section-label">Playlists</div>
         <div id="playlist-list">
             <div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Loading...</div>
@@ -458,19 +73,26 @@
     <% if (songs && songs.length > 0) { %>
 
     <div class="section-header">
-        <div class="header-left">
+        <div class="header-title-group">
             <h1 id="source-title">Liked Songs</h1>
             <span class="count" id="count-label">LAST 50 ADDED</span>
         </div>
+    </div>
+    <div class="search-row">
         <div class="search-wrap">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input id="search" type="text" placeholder="search songs..." autocomplete="off" />
         </div>
+        <button class="btn-search-clear" id="btn-search-clear" style="display:none;" title="Clear search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
-    <div id="sdk-status">Connecting to Spotify player...</div>
+    <div id="sdk-status" style="font-size:0.65rem;color:var(--muted);margin-bottom:16px;">Connecting to Spotify player...</div>
     <div class="song-list" id="song-list"></div>
     <div class="no-results" id="no-results">no matches found</div>
 
@@ -494,9 +116,7 @@
             </svg>
         </button>
     </div>
-    <div class="drawer-body" id="drawer-body">
-        <!-- Rendered by JS -->
-    </div>
+    <div class="drawer-body" id="drawer-body"></div>
 </div>
 
 <!-- ── Player Bar ── -->
@@ -508,7 +128,6 @@
             <div id="np-artist"></div>
         </div>
     </div>
-
     <div class="player-controls">
         <div class="control-btns">
             <button class="ctrl-btn" id="btn-prev" title="Previous">
@@ -528,21 +147,21 @@
             <span class="time-label right" id="time-total">0:00</span>
         </div>
     </div>
-
     <div class="volume-wrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
         </svg>
         <input type="range" id="volume-slider" min="0" max="100" value="80" />
     </div>
-
-    <!-- Queue toggle button -->
-    <button id="btn-queue-toggle" title="Toggle queue">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
-        </svg>
-        Queue
-    </button>
+    <div class="player-bar-right">
+        <span id="sdk-status-bar" style="font-size:0.65rem;color:var(--muted);white-space:nowrap;"></span>
+        <button id="btn-queue-toggle" title="Toggle queue">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+            </svg>
+            Queue
+        </button>
+    </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -550,64 +169,103 @@
 <script>
     // ── Song data & room ──────────────────────────────────────────────────────
     const allSongs = <%- JSON.stringify(songs) %>;
-
-    // For now use a single default room — rooms system will expand this later
     const roomId = 'default-room';
 
     // ── State ─────────────────────────────────────────────────────────────────
     let deviceId        = null;
     let player          = null;
     let currentTrackUri = null;
+    let nowPlayingSong  = null;
     let isPlaying       = false;
     let progressInterval = null;
     let currentPosition = 0;
     let currentDuration = 0;
-
-    // Local mirror of server queue state
-    let manualQueue     = [];
-    let autoQueue       = [];
-    let isDragging      = false;
     let lastAdvancedUri = null;
 
-    // For liked songs infinite scroll
-    let likedOffset    = allSongs.length; // already loaded this many on page load
+    let manualQueue  = [];
+    let autoQueue    = [];
+    let isDragging   = false;
+    let historyStack = []; // up to 10 previously played songs
+
+    let likedOffset    = allSongs.length;
     let likedLoading   = false;
     let likedExhausted = false;
-
-    // For auto-queue refill tracking (separate from display)
     let autoQueueOffset = 50;
+
+    let currentSource = 'liked';
+    let currentSongs  = [...allSongs];
+    let playlistCache = {};
+    const forbiddenPlaylists = new Set();
 
     // ── Socket.io ─────────────────────────────────────────────────────────────
     const socket = io();
 
     socket.on('connect', () => {
-        console.log('[queue] socket connected, joining room:', roomId);
+        // console.log('[queue] socket connected, joining room:', roomId);
         socket.emit('join-room', roomId);
     });
 
     socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq }) => {
-        if (isDragging) {
-            console.log('[queue] ignoring queue-state during drag');
-            return;
-        }
-        console.log('[queue] queue-state received — manual:', mq.length, 'auto:', aq.length);
+        if (isDragging) return;
         manualQueue = mq;
         autoQueue   = aq;
         renderQueue();
     });
 
-    // Another user (or this user on another device) triggered a track
     socket.on('play-track', (song) => {
+        currentTrackUri = song.uri;
+        nowPlayingSong  = song;
+        renderQueue();
         playSong(song.uri, false);
     });
+
+    // ── Queue Drawer Toggle ───────────────────────────────────────────────────
+    const drawer    = document.getElementById('queue-drawer');
+    const toggleBtn = document.getElementById('btn-queue-toggle');
+    const closeBtn  = document.getElementById('btn-close-drawer');
+
+    function openDrawer()  { drawer.classList.add('open'); document.body.classList.add('drawer-open'); toggleBtn.classList.add('active'); }
+    function closeDrawer() { drawer.classList.remove('open'); document.body.classList.remove('drawer-open'); toggleBtn.classList.remove('active'); }
+
+    toggleBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeDrawer() : openDrawer());
+    closeBtn.addEventListener('click', closeDrawer);
+
+    // ── Library Sidebar Toggle ────────────────────────────────────────────────
+    const sidebar   = document.getElementById('library-sidebar');
+    const libToggle = document.getElementById('btn-library-toggle');
+    const backdrop  = document.getElementById('sidebar-backdrop');
+
+    if (window.innerWidth <= 768) {
+        sidebar.classList.add('collapsed');
+        libToggle.classList.remove('active');
+    }
+
+    function openSidebar() {
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('open');
+        sidebar.style.pointerEvents = 'auto';
+        libToggle.classList.add('active');
+        if (window.innerWidth <= 768) backdrop.classList.add('visible');
+    }
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebar.classList.add('collapsed');
+        sidebar.style.pointerEvents = '';
+        libToggle.classList.remove('active');
+        backdrop.classList.remove('visible');
+    }
+
+    libToggle.addEventListener('click', () => {
+        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+    backdrop.addEventListener('click', closeSidebar);
 
     // ── Spotify Web Playback SDK ──────────────────────────────────────────────
     window.onSpotifyWebPlaybackSDKReady = async () => {
         player = new Spotify.Player({
             name: 'EndAuxRacism Player',
             getOAuthToken: async (cb) => {
-                const res  = await fetch('/spotify/token');
-                const data = await res.json();
+                const data = await fetch('/spotify/token').then(r => r.json());
                 cb(data.accessToken);
             },
             volume: 0.8,
@@ -618,14 +276,13 @@
             setStatus('ready', '● Player ready');
         });
 
-        player.addListener('not_ready', () => setStatus('error', 'Player disconnected'));
+        player.addListener('not_ready', () => setStatus('error', '✕ Disconnected'));
 
         player.addListener('player_state_changed', (state) => {
             if (!state) return;
-
-            const track    = state.track_window.current_track;
-            const prevUri  = currentTrackUri;
-            isPlaying      = !state.paused;
+            const track   = state.track_window.current_track;
+            const prevUri = currentTrackUri;
+            isPlaying       = !state.paused;
             currentPosition = state.position;
             currentDuration = state.duration;
             currentTrackUri = track.uri;
@@ -633,121 +290,137 @@
             updateNowPlaying(track);
             updatePlayPauseIcon();
             updateProgress();
-            updateQueueNowPlaying(track);
+
+            const songData = {
+                name:   track.name,
+                artist: track.artists.map(a => a.name).join(', '),
+                image:  track.album?.images?.[0]?.url || '',
+                uri:    track.uri,
+            };
+
+            if (prevUri !== track.uri) {
+                nowPlayingSong = songData;
+                renderQueue();
+                // console.log(`[player] track changed: "${track.name}"`);
+            }
 
             clearInterval(progressInterval);
             if (isPlaying) {
                 progressInterval = setInterval(() => {
                     currentPosition += 500;
                     updateProgress();
+                    // Near-end advance
+                    if (
+                        currentDuration > 0 &&
+                        currentPosition >= currentDuration - 3000 &&
+                        lastAdvancedUri !== currentTrackUri
+                    ) {
+                        lastAdvancedUri = currentTrackUri;
+                        // console.log(`[player] near end of "${track.name}" — advancing queue`);
+                        socket.emit('queue-advance', { roomId });
+                    }
                 }, 500);
             }
 
-            // Detect natural track end → advance queue
-            if (state.paused && state.position === 0 && prevUri && prevUri !== track.uri) {
-                if (lastAdvancedUri !== prevUri) {
-                    lastAdvancedUri = prevUri;
-                    console.log('[queue] track ended, advancing from:', prevUri);
-                    socket.emit('queue-advance', { roomId });
-                } else {
-                    console.log('[queue] queue-advance suppressed (already fired for this track)');
-                }
-            }
-
-            // Refill auto queue when it gets low
-            if (autoQueue.length < 10) {
-                fetchMoreSongs();
-            }
+            if (autoQueue.length < 10) fetchMoreSongs();
         });
 
-        player.addListener('initialization_error', ({ message }) => setStatus('error', `Init error: ${message}`));
-        player.addListener('authentication_error',  ({ message }) => setStatus('error', `Auth error: ${message}`));
-        player.addListener('account_error',         ()           => setStatus('error', 'Spotify Premium required'));
+        player.addListener('initialization_error', ({ message }) => setStatus('error', `Init: ${message}`));
+        player.addListener('authentication_error',  ({ message }) => setStatus('error', `Auth: ${message}`));
+        player.addListener('account_error',         ()           => setStatus('error', 'Premium required'));
 
         player.connect();
     };
 
     // ── Controls ──────────────────────────────────────────────────────────────
     document.getElementById('btn-play-pause').addEventListener('click', () => player?.togglePlay());
-    document.getElementById('btn-prev').addEventListener('click',       () => player?.previousTrack());
+    document.getElementById('btn-prev').addEventListener('click', () => {
+        // More than 5 seconds in — restart current track
+        if (currentPosition > 5000) {
+            player?.seek(0);
+            return;
+        }
+        // Need at least 2 entries — current song is at [0], previous is at [1]
+        if (historyStack.length < 2) {
+            player?.seek(0);
+            return;
+        }
+
+        // Pop current song off the top
+        historyStack.shift();
+        const prev = historyStack[0];
+        // console.log(`[history] back → "${prev.name}" — remaining: [${historyStack.map(s => s.name).join(', ')}]`);
+
+        // Put current song at front of manual queue so pressing next returns to it
+        if (nowPlayingSong) {
+            // console.log(`[history] prepending "${nowPlayingSong.name}" to manual queue`);
+            socket.emit('queue-prepend', { roomId, song: { ...nowPlayingSong } });
+        }
+
+        // skipHistoryPush=true — prev is already at historyStack[0], don't re-add it
+        lastAdvancedUri = currentTrackUri;
+        playSong(prev.uri, false, true);
+    });
     document.getElementById('btn-next').addEventListener('click', () => {
         lastAdvancedUri = currentTrackUri;
-        console.log('[queue] next button pressed, advancing queue');
         socket.emit('queue-advance', { roomId });
     });
-
-    document.getElementById('volume-slider').addEventListener('input', (e) => {
-        player?.setVolume(e.target.value / 100);
-    });
-
+    document.getElementById('volume-slider').addEventListener('input', (e) => player?.setVolume(e.target.value / 100));
     document.getElementById('progress-bar').addEventListener('click', (e) => {
         if (!player || !currentDuration) return;
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect   = e.currentTarget.getBoundingClientRect();
         const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
-        player.seek(seekTo);
-        currentPosition = seekTo;
-        updateProgress();
+        player.seek(seekTo); currentPosition = seekTo; updateProgress();
     });
 
-    // ── Queue Drawer Toggle ───────────────────────────────────────────────────
-    const drawer        = document.getElementById('queue-drawer');
-    const toggleBtn     = document.getElementById('btn-queue-toggle');
-    const closeBtn      = document.getElementById('btn-close-drawer');
-
-    function openDrawer()  { drawer.classList.add('open'); document.body.classList.add('drawer-open'); toggleBtn.classList.add('active'); }
-    function closeDrawer() { drawer.classList.remove('open'); document.body.classList.remove('drawer-open'); toggleBtn.classList.remove('active'); }
-
-    toggleBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeDrawer() : openDrawer());
-    closeBtn.addEventListener('click', closeDrawer);
-
     // ── Play a track ──────────────────────────────────────────────────────────
-    async function playSong(trackUri, setAutoFromHere = true) {
-        console.log('[queue] playSong called — uri:', trackUri, 'setAuto:', setAutoFromHere);
-        if (!deviceId) return alert('Player not ready yet — give it a moment');
+    async function playSong(trackUri, setAutoFromHere = true, skipHistoryPush = false) {
+        if (!deviceId) return alert('Player not ready yet');
+        // console.log(`[player] playSong "${trackUri}" setAuto=${setAutoFromHere}`);
 
-        const res = await fetch('/spotify/play', {
+        // Push the INCOMING song to history immediately when it starts playing
+        if (!skipHistoryPush) {
+            const incoming = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri)
+                          || (nowPlayingSong?.uri === trackUri ? nowPlayingSong : null);
+            if (incoming && historyStack[0]?.uri !== trackUri) {
+                historyStack.unshift({ ...incoming });
+                if (historyStack.length > 10) historyStack.pop();
+                // console.log(`[history] pushed "${incoming.name}" — stack: [${historyStack.map(s => s.name).join(', ')}]`);
+            }
+        }
+
+        await fetch('/spotify/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ trackUri, deviceId }),
         });
-        console.log('[queue] /spotify/play response status:', res.status);
-
-        currentTrackUri = trackUri;
-
+        // Do NOT set currentTrackUri here — player_state_changed owns it
+        if (nowPlayingSong?.uri !== trackUri) {
+            const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
+            if (known) { nowPlayingSong = known; renderQueue(); }
+        }
         if (setAutoFromHere) {
             const idx   = currentSongs.findIndex(s => s.uri === trackUri);
             const after = idx >= 0 ? currentSongs.slice(idx + 1) : currentSongs;
-            const batch = after.slice(0, 30);
-            console.log('[queue] queue-set-auto emitting', batch.length, 'songs, starting at index', idx + 1);
-            socket.emit('queue-set-auto', { roomId, songs: batch });
+            socket.emit('queue-set-auto', { roomId, songs: after.slice(0, 30) });
         }
     }
 
-    // ── Queue a song ──────────────────────────────────────────────────────────
     function queueSong(song) {
-        console.log('[queue] queue-add emitting:', song.name);
         socket.emit('queue-add', { roomId, song });
         showToast(`"${song.name}" added to queue`);
     }
 
-    // ── Fetch more songs for auto queue ───────────────────────────────────────
     async function fetchMoreSongs() {
-        console.log('[queue] fetchMoreSongs — offset:', autoQueueOffset);
         try {
             const res   = await fetch(`/spotify/liked?offset=${autoQueueOffset}&limit=20`);
-            if (!res.ok) {
-                console.warn('[queue] fetchMoreSongs got non-OK status:', res.status, '— /spotify/liked route may not exist yet');
-                return;
-            }
+            if (!res.ok) return;
             const songs = await res.json();
-            console.log('[queue] fetchMoreSongs got', songs.length, 'songs');
             if (songs.length > 0) {
                 autoQueueOffset += songs.length;
                 socket.emit('queue-replenish', { roomId, songs });
             }
-        } catch (e) {
-            console.warn('[queue] fetchMoreSongs error:', e);
-        }
+        } catch (e) {}
     }
 
     // ── Render Queue Drawer ───────────────────────────────────────────────────
@@ -755,28 +428,23 @@
         const body = document.getElementById('drawer-body');
         body.innerHTML = '';
 
-        // Now playing section
-        if (currentTrackUri) {
+        if (currentTrackUri && nowPlayingSong) {
             const label = document.createElement('div');
             label.className = 'queue-section-label';
             label.textContent = 'Now Playing';
             body.appendChild(label);
-
             const row = document.createElement('div');
             row.className = 'now-playing-row';
-            const np = document.getElementById('np-art');
             row.innerHTML = `
                 <div class="now-playing-dot"></div>
-                ${np.src ? `<img class="q-art" src="${np.src}" />` : `<div class="q-art-placeholder"></div>`}
+                ${nowPlayingSong.image ? `<img class="q-art" src="${nowPlayingSong.image}" />` : `<div class="q-art-placeholder"></div>`}
                 <div class="q-info">
-                    <div class="q-name">${document.getElementById('np-name').textContent}</div>
-                    <div class="q-artist">${document.getElementById('np-artist').textContent}</div>
-                </div>
-            `;
+                    <div class="q-name">${nowPlayingSong.name || ''}</div>
+                    <div class="q-artist">${nowPlayingSong.artist || ''}</div>
+                </div>`;
             body.appendChild(row);
         }
 
-        // Manual queue
         const manLabel = document.createElement('div');
         manLabel.className = 'queue-section-label';
         manLabel.textContent = `Next Up (${manualQueue.length})`;
@@ -788,16 +456,13 @@
             hint.textContent = 'No queued songs — use + queue to add';
             body.appendChild(hint);
         } else {
-            manualQueue.forEach((song, i) => {
-                body.appendChild(makeQueueItem(song, i, 'manual'));
-            });
+            manualQueue.forEach((song, i) => body.appendChild(makeQueueItem(song, i, 'manual')));
         }
 
-        // Auto queue
         const autoLabel = document.createElement('div');
         autoLabel.className = 'queue-section-label';
         autoLabel.style.marginTop = '12px';
-        autoLabel.textContent = `From Liked Songs (${autoQueue.length})`;
+        autoLabel.textContent = `Up Next (${autoQueue.length})`;
         body.appendChild(autoLabel);
 
         if (autoQueue.length === 0) {
@@ -806,29 +471,23 @@
             hint.textContent = 'Will populate when you press play';
             body.appendChild(hint);
         } else {
-            autoQueue.forEach((song, i) => {
-                body.appendChild(makeQueueItem(song, i, 'auto'));
-            });
+            autoQueue.forEach((song, i) => body.appendChild(makeQueueItem(song, i, 'auto')));
         }
     }
 
-    // ── Build a draggable queue item ──────────────────────────────────────────
     function makeQueueItem(song, index, queueType) {
         const item = document.createElement('div');
         item.className = 'queue-item';
         item.draggable = true;
         item.dataset.index     = index;
         item.dataset.queueType = queueType;
-
         item.innerHTML = `
             <div class="drag-handle">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
                     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                 </svg>
             </div>
-            ${song.image
-                ? `<img class="q-art" src="${song.image}" alt="${song.album}" />`
-                : `<div class="q-art-placeholder"></div>`}
+            ${song.image ? `<img class="q-art" src="${song.image}" alt="" />` : `<div class="q-art-placeholder"></div>`}
             <div class="q-info">
                 <div class="q-name">${song.name}</div>
                 <div class="q-artist">${song.artist}</div>
@@ -837,38 +496,26 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
-            </button>
-        `;
-
-        // Remove — read dataset at click time
+            </button>`;
         item.querySelector('.btn-remove-queue').addEventListener('click', (e) => {
             e.stopPropagation();
-            socket.emit('queue-remove', {
-                roomId,
-                queueType: item.dataset.queueType,
-                index: parseInt(item.dataset.index),
-            });
+            socket.emit('queue-remove', { roomId, queueType: item.dataset.queueType, index: parseInt(item.dataset.index) });
         });
-
         return item;
     }
 
-    // ── Drag & drop ───────────────────────────────────────────────────────────
-    let dragSrc      = null;
-    let dragOverItem = null;
+    // ── Drag & drop (mouse + touch) ───────────────────────────────────────────
+    let dragSrc = null, dragOverItem = null;
 
     function reorderQueue(queueType, fromIndex, toIndex) {
         if (fromIndex === toIndex) return;
-        console.log('[drag] reorderQueue — type:', queueType, 'from:', fromIndex, 'to:', toIndex);
         const arr  = queueType === 'manual' ? manualQueue : autoQueue;
         const copy = [...arr];
         const [moved] = copy.splice(fromIndex, 1);
         copy.splice(toIndex, 0, moved);
-        if (queueType === 'manual') manualQueue = copy;
-        else autoQueue = copy;
+        if (queueType === 'manual') manualQueue = copy; else autoQueue = copy;
         renderQueue();
         socket.emit('queue-reorder', { roomId, queueType, fromIndex, toIndex });
-        console.log('[drag] queue-reorder emitted');
     }
 
     function moveToManualQueue(fromAutoIndex, toManualIndex) {
@@ -877,152 +524,129 @@
         const [moved] = autoCopy.splice(fromAutoIndex, 1);
         const insertAt = manualCopy.length === 0 ? 0 : toManualIndex;
         manualCopy.splice(insertAt, 0, moved);
-        autoQueue   = autoCopy;
-        manualQueue = manualCopy;
+        autoQueue = autoCopy; manualQueue = manualCopy;
         renderQueue();
         socket.emit('queue-move-to-manual', { roomId, fromAutoIndex, toManualIndex: insertAt });
-        console.log('[drag] queue-move-to-manual emitted — auto[', fromAutoIndex, '] → manual[', insertAt, ']');
     }
 
-    function initDragOnDrawer() {
+    function commitDrop(srcEl, targetEl) {
+        if (!targetEl || !srcEl || targetEl === srcEl) return;
+        document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+        const fromIndex = parseInt(srcEl.dataset.index);
+        const fromType  = srcEl.dataset.queueType;
+        const toIndex   = parseInt(targetEl.dataset.index);
+        const toType    = targetEl.dataset.queueType;
+        if (fromType !== toType) {
+            if (fromType === 'auto' && toType === 'manual') moveToManualQueue(fromIndex, toIndex);
+            return;
+        }
+        reorderQueue(fromType, fromIndex, toIndex);
+    }
+
+    (function initDrag() {
         const body = document.getElementById('drawer-body');
 
+        // Mouse
         body.addEventListener('dragstart', (e) => {
             const item = e.target.closest('.queue-item');
             if (!item) return;
-            dragSrc    = item;
-            isDragging = true;
+            dragSrc = item; isDragging = true;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', '');
             setTimeout(() => item.classList.add('dragging'), 0);
-            console.log('[drag] dragstart — index:', item.dataset.index, 'type:', item.dataset.queueType);
         });
-
         body.addEventListener('dragend', () => {
-            console.log('[drag] dragend');
             document.querySelectorAll('.queue-item.dragging').forEach(el => el.classList.remove('dragging'));
             document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
-            dragSrc      = null;
-            dragOverItem = null;
-            isDragging   = false; // always clear here too, covers cancelled/escaped drags
+            dragSrc = null; dragOverItem = null; isDragging = false;
         });
-
         body.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
             const item = e.target.closest('.queue-item');
             if (!item || item === dragSrc) return;
             if (item !== dragOverItem) {
-                if (dragOverItem) dragOverItem.classList.remove('drag-over');
+                dragOverItem?.classList.remove('drag-over');
                 item.classList.add('drag-over');
                 dragOverItem = item;
             }
         });
-
         body.addEventListener('dragleave', (e) => {
             const item = e.target.closest('.queue-item');
-            if (!item) return;
-            if (item.contains(e.relatedTarget)) return;
+            if (!item || item.contains(e.relatedTarget)) return;
             item.classList.remove('drag-over');
             if (dragOverItem === item) dragOverItem = null;
         });
-
         body.addEventListener('drop', (e) => {
             e.preventDefault();
             const target = e.target.closest('.queue-item');
-            if (!target || !dragSrc || target === dragSrc) {
-                console.log('[drag] drop ignored — target:', !!target, 'dragSrc:', !!dragSrc, 'same:', target === dragSrc);
-                isDragging = false;
-                return;
-            }
-            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
-            dragOverItem = null;
-            isDragging = false; // clear immediately so queue-state updates aren't blocked
-
-            const fromIndex = parseInt(dragSrc.dataset.index);
-            const fromType  = dragSrc.dataset.queueType;
-            const toIndex   = parseInt(target.dataset.index);
-            const toType    = target.dataset.queueType;
-
-            console.log('[drag] drop — from:', fromIndex, '(', fromType, ') to:', toIndex, '(', toType, ')');
-
-            if (fromType !== toType) {
-                if (fromType === 'auto' && toType === 'manual') {
-                    console.log('[drag] cross-queue: auto[', fromIndex, '] → manual[', toIndex, ']');
-                    moveToManualQueue(fromIndex, toIndex);
-                } else {
-                    console.log('[drag] drop skipped — unsupported cross-queue direction');
-                }
-                return;
-            }
-            reorderQueue(fromType, fromIndex, toIndex);
+            isDragging = false;
+            commitDrop(dragSrc, target);
+            dragOverItem = null; dragSrc = null;
         });
 
-        // ── Touch drag (mobile) ───────────────────────────────────────────────
-        let touchItem   = null;
-        let touchStartY = 0;
-        let touchClone  = null;
+        // Touch
+        let touchClone = null, touchSrc = null, touchOffsetX = 0, touchOffsetY = 0;
 
         body.addEventListener('touchstart', (e) => {
-            touchItem = e.target.closest('.queue-item');
-            if (!touchItem) return;
-            touchStartY = e.touches[0].clientY;
-            touchClone  = touchItem.cloneNode(true);
-            touchClone.style.cssText = `position:fixed;opacity:0.7;pointer-events:none;z-index:999;
-                width:${touchItem.offsetWidth}px;left:${touchItem.getBoundingClientRect().left}px;
-                top:${touchItem.getBoundingClientRect().top}px;background:var(--surface2);border-radius:6px;`;
+            const handle = e.target.closest('.drag-handle');
+            const item   = handle ? handle.closest('.queue-item') : null;
+            if (!item) return;
+            touchSrc = item; isDragging = true;
+            const touch = e.touches[0];
+            const rect  = item.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+            touchClone = item.cloneNode(true);
+            touchClone.style.cssText = `
+                position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;
+                opacity:0.85;pointer-events:none;z-index:9999;
+                background:var(--surface2);border:1px solid var(--green);
+                border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.5);`;
             document.body.appendChild(touchClone);
-            touchItem.classList.add('dragging');
-            isDragging = true;
+            item.classList.add('dragging');
         }, { passive: true });
 
         body.addEventListener('touchmove', (e) => {
-            if (!touchClone) return;
-            const dy = e.touches[0].clientY - touchStartY;
-            touchClone.style.top = `${touchItem.getBoundingClientRect().top + dy}px`;
-        }, { passive: true });
+            if (!touchSrc || !touchClone) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchClone.style.left = `${touch.clientX - touchOffsetX}px`;
+            touchClone.style.top  = `${touch.clientY - touchOffsetY}px`;
+            touchClone.style.display = 'none';
+            const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchClone.style.display = '';
+            const overItem = elUnder?.closest('.queue-item');
+            if (overItem && overItem !== touchSrc) {
+                if (overItem !== dragOverItem) {
+                    dragOverItem?.classList.remove('drag-over');
+                    overItem.classList.add('drag-over');
+                    dragOverItem = overItem;
+                }
+            } else if (!overItem) {
+                dragOverItem?.classList.remove('drag-over');
+                dragOverItem = null;
+            }
+        }, { passive: false });
 
         body.addEventListener('touchend', (e) => {
-            if (!touchItem) return;
-            if (touchClone) { touchClone.remove(); touchClone = null; }
-            touchItem.classList.remove('dragging');
-
-            const touch     = e.changedTouches[0];
-            const fromIndex = parseInt(touchItem.dataset.index);
-            const fromType  = touchItem.dataset.queueType;
-
-            // Search all queue items (not just same-type) for cross-queue support
-            const allItems = [...document.querySelectorAll('.queue-item')]
-                .filter(el => el !== touchItem);
-            const target = allItems.find(el => {
-                const r = el.getBoundingClientRect();
-                return touch.clientY >= r.top && touch.clientY <= r.bottom;
-            });
-
-            console.log('[drag] touchend — from:', fromIndex, '(', fromType, ') target found:', !!target, target ? '(' + target.dataset.queueType + ')' : '');
-            if (target) {
-                const toType  = target.dataset.queueType;
-                const toIndex = parseInt(target.dataset.index);
-                if (fromType !== toType) {
-                    if (fromType === 'auto' && toType === 'manual') {
-                        moveToManualQueue(fromIndex, toIndex);
-                    }
-                } else {
-                    reorderQueue(fromType, fromIndex, toIndex);
-                }
-            }
-            touchItem  = null;
-            isDragging = false;
+            if (!touchSrc) return;
+            touchClone?.remove(); touchClone = null;
+            touchSrc.classList.remove('dragging');
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            const touch = e.changedTouches[0];
+            const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            const target  = elUnder?.closest('.queue-item');
+            commitDrop(touchSrc, target);
+            touchSrc = null; dragOverItem = null; isDragging = false;
         }, { passive: true });
-    }
 
-    initDragOnDrawer();
-
-    // ── Update now-playing in drawer when track changes ───────────────────────
-    function updateQueueNowPlaying() {
-        // Just re-render the drawer — it reads current np state
-        if (drawer.classList.contains('open')) renderQueue();
-    }
+        body.addEventListener('touchcancel', () => {
+            touchClone?.remove(); touchClone = null;
+            touchSrc?.classList.remove('dragging');
+            document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+            touchSrc = null; dragSrc = null; dragOverItem = null; isDragging = false;
+        }, { passive: true });
+    })();
 
     // ── UI Helpers ────────────────────────────────────────────────────────────
     function updateNowPlaying(track) {
@@ -1046,47 +670,43 @@
         document.getElementById('time-total').textContent    = msToTime(currentDuration);
     }
 
+    function setStatus(type, msg) {
+        const el  = document.getElementById('sdk-status');
+        const bar = document.getElementById('sdk-status-bar');
+        if (el)  { el.textContent  = msg; el.className  = type; }
+        if (bar) { bar.textContent = msg; bar.className = type; }
+    }
+
     function msToTime(ms) {
         const s = Math.floor(ms / 1000);
         return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
     }
 
-    function setStatus(type, msg) {
-        const el = document.getElementById('sdk-status');
-        el.textContent = msg; el.className = type;
-    }
-
     let toastTimeout;
     function showToast(msg) {
-        let toast = document.getElementById('toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'toast';
-            toast.style.cssText = `
-                position:fixed; bottom:104px; left:50%; transform:translateX(-50%);
-                background:var(--green); color:#000; font-family:'DM Mono',monospace;
-                font-size:0.75rem; font-weight:600; padding:8px 18px; border-radius:100px;
-                z-index:200; opacity:0; transition:opacity 0.2s; pointer-events:none;
-            `;
-            document.body.appendChild(toast);
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.style.cssText = `position:fixed;bottom:104px;left:50%;transform:translateX(-50%);
+                background:var(--green);color:#000;font-family:'DM Mono',monospace;
+                font-size:0.75rem;font-weight:600;padding:8px 18px;border-radius:100px;
+                z-index:300;opacity:0;transition:opacity 0.2s;pointer-events:none;`;
+            document.body.appendChild(t);
         }
-        toast.textContent = msg;
-        toast.style.opacity = '1';
+        t.textContent = msg; t.style.opacity = '1';
         clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+        toastTimeout = setTimeout(() => { t.style.opacity = '0'; }, 2200);
     }
 
     // ── Fuzzy Search ──────────────────────────────────────────────────────────
     function fuzzyScore(str, query) {
         str = str.toLowerCase(); query = query.toLowerCase();
         if (str.startsWith(query)) return 0;
-        if (str.includes(query)) return 1;
-        let qi = 0, gaps = 0, lastMatch = -1;
+        if (str.includes(query))   return 1;
+        let qi = 0, gaps = 0, last = -1;
         for (let i = 0; i < str.length && qi < query.length; i++) {
-            if (str[i] === query[qi]) {
-                gaps += lastMatch >= 0 ? (i - lastMatch - 1) : 0;
-                lastMatch = i; qi++;
-            }
+            if (str[i] === query[qi]) { gaps += last >= 0 ? i - last - 1 : 0; last = i; qi++; }
         }
         return qi < query.length ? Infinity : 2 + gaps;
     }
@@ -1094,31 +714,23 @@
     function highlight(str, query) {
         if (!query) return str;
         const idx = str.toLowerCase().indexOf(query.toLowerCase());
-        if (idx !== -1) {
-            return str.slice(0, idx)
-                + `<span class="match">${str.slice(idx, idx + query.length)}</span>`
-                + str.slice(idx + query.length);
+        if (idx !== -1) return str.slice(0, idx) + `<span class="match">${str.slice(idx, idx + query.length)}</span>` + str.slice(idx + query.length);
+        let r = '', qi = 0;
+        for (const ch of str) {
+            if (qi < query.length && ch.toLowerCase() === query[qi].toLowerCase()) { r += `<span class="match">${ch}</span>`; qi++; }
+            else r += ch;
         }
-        let result = '', qi = 0;
-        for (let i = 0; i < str.length; i++) {
-            if (qi < query.length && str[i].toLowerCase() === query[qi].toLowerCase()) {
-                result += `<span class="match">${str[i]}</span>`; qi++;
-            } else result += str[i];
-        }
-        return result;
+        return r;
     }
 
-    // ── Render Song List ──────────────────────────────────────────────────────
+    // ── Song row builder ──────────────────────────────────────────────────────
     function makeSongRow(song, i) {
-        const row      = document.createElement('div');
-        row.className  = 'song-row';
-        const isActive = song.uri === currentTrackUri;
-        const query    = document.getElementById('search').value.trim();
+        const row   = document.createElement('div');
+        row.className = 'song-row';
+        const query = document.getElementById('search').value.trim();
         row.innerHTML = `
-            <span class="song-index" style="${isActive ? 'color:var(--green)' : ''}">${i + 1}</span>
-            ${song.image
-                ? `<img class="song-art" src="${song.image}" alt="${song.album || ''}" />`
-                : `<div class="song-art-placeholder"></div>`}
+            <span class="song-index" style="${song.uri === currentTrackUri ? 'color:var(--green)' : ''}">${i + 1}</span>
+            ${song.image ? `<img class="song-art" src="${song.image}" alt="" />` : `<div class="song-art-placeholder"></div>`}
             <div class="song-info">
                 <div class="song-name">${highlight(song.name, query)}</div>
                 <div class="song-artist">${highlight(song.artist, query)}</div>
@@ -1130,8 +742,7 @@
             <div class="row-actions">
                 <button class="btn-play">▶ play</button>
                 <button class="btn-queue">+ queue</button>
-            </div>
-        `;
+            </div>`;
         row.querySelector('.btn-play').addEventListener('click',  () => playSong(song.uri, true));
         row.querySelector('.btn-queue').addEventListener('click', () => queueSong(song));
         return row;
@@ -1149,7 +760,6 @@
             countLabel.textContent  = 'NO RESULTS';
             return;
         }
-
         noResults.style.display = 'none';
         countLabel.textContent  = query
             ? `${filtered.length} RESULT${filtered.length !== 1 ? 'S' : ''}`
@@ -1157,61 +767,47 @@
 
         filtered.forEach((song, i) => list.appendChild(makeSongRow(song, i)));
 
-        // Attach infinite scroll sentinel for liked songs when not searching
-        if (currentSource === 'liked' && !query && !likedExhausted) {
-            attachScrollSentinel();
-        }
+        if (currentSource === 'liked' && !query && !likedExhausted) attachScrollSentinel();
     }
 
-    // ── Source state ──────────────────────────────────────────────────────────
-    let currentSource   = 'liked'; // 'liked' | playlist id
-    let currentSongs    = [...allSongs]; // what's shown in the main list
-    let playlistCache   = {};  // playlistId → track array
+    // ── Search with clear button ──────────────────────────────────────────────
+    const searchInput = document.getElementById('search');
+    const searchClear = document.getElementById('btn-search-clear');
 
-    // Update liked count in sidebar
-    document.getElementById('liked-count').textContent = `${allSongs.length} songs`;
-
-    renderSongs(currentSongs);
-
-    // ── Search (always searches currentSongs) ─────────────────────────────────
-    document.getElementById('search').addEventListener('input', (e) => {
+    searchInput.addEventListener('input', (e) => {
         const query = e.target.value.trim();
+        searchClear.style.display = query ? '' : 'none';
         if (!query) { renderSongs(currentSongs); return; }
         const scored = currentSongs
             .map(s => ({ song: s, score: Math.min(fuzzyScore(s.name, query) * 0.5, fuzzyScore(s.artist, query)) }))
-            .filter(s => s.score < Infinity)
-            .sort((a, b) => a.score - b.score);
+            .filter(s => s.score < Infinity).sort((a, b) => a.score - b.score);
         renderSongs(scored.map(s => s.song));
     });
 
-    // ── Library Sidebar Toggle ────────────────────────────────────────────────
-    const sidebar    = document.getElementById('library-sidebar');
-    const libToggle  = document.getElementById('btn-library-toggle');
-
-    libToggle.addEventListener('click', () => {
-        const collapsed = sidebar.classList.toggle('collapsed');
-        libToggle.classList.toggle('active', !collapsed);
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.style.display = 'none';
+        searchInput.focus();
+        renderSongs(currentSongs);
     });
 
     // ── Switch source ─────────────────────────────────────────────────────────
     async function switchSource(sourceId, sourceName) {
-        // Update active state in sidebar
         document.querySelectorAll('.source-item').forEach(el => {
             el.classList.toggle('active', el.dataset.source === sourceId);
         });
-
         currentSource = sourceId;
         document.getElementById('source-title').textContent = sourceName;
-        document.getElementById('search').value = '';
+        searchInput.value = '';
+        searchClear.style.display = 'none';
 
         if (sourceId === 'liked') {
             currentSongs = [...allSongs];
             document.getElementById('count-label').textContent = `${allSongs.length} SONGS`;
-            renderSongs(currentSongs); // also re-attaches sentinel
+            renderSongs(currentSongs);
             return;
         }
 
-        // Playlist — check cache first
         if (playlistCache[sourceId]) {
             currentSongs = playlistCache[sourceId];
             document.getElementById('count-label').textContent = `${currentSongs.length} SONGS`;
@@ -1219,44 +815,40 @@
             return;
         }
 
-        // Fetch from server
         document.getElementById('count-label').textContent = 'LOADING...';
         document.getElementById('song-list').innerHTML = `
-            <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
-                Loading tracks...
-            </div>`;
+            <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">Loading tracks...</div>`;
 
         try {
-            const res   = await fetch(`/spotify/playlists/${sourceId}/tracks`);
+            const res = await fetch(`/spotify/playlists/${sourceId}/tracks`);
             if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                const msg  = body.error || `Spotify error ${res.status}`;
-                console.warn('[library] playlist tracks error:', res.status, msg);
-                document.getElementById('count-label').textContent = 'UNAVAILABLE';
-                document.getElementById('song-list').innerHTML = `
-                    <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
-                        This playlist can't be loaded (${msg})
-                    </div>`;
+                if (res.status === 403) {
+                    // Inaccessible — silently remove from sidebar and fall back
+                    forbiddenPlaylists.add(sourceId);
+                    document.querySelector(`.source-item[data-source="${sourceId}"]`)?.remove();
+                    switchSource('liked', 'Liked Songs');
+                } else {
+                    document.getElementById('count-label').textContent = 'UNAVAILABLE';
+                    document.getElementById('song-list').innerHTML = `
+                        <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
+                            This playlist can't be loaded
+                        </div>`;
+                }
                 return;
             }
             const songs = await res.json();
             playlistCache[sourceId] = songs;
-            // Only render if still on this source (user may have switched away)
             if (currentSource === sourceId) {
                 currentSongs = songs;
                 document.getElementById('count-label').textContent = `${songs.length} SONGS`;
                 renderSongs(currentSongs);
             }
         } catch (e) {
-            console.error('[library] failed to load playlist tracks:', e);
             document.getElementById('count-label').textContent = 'ERROR';
         }
     }
 
-    // Liked songs source click
-    document.getElementById('source-liked').addEventListener('click', () => {
-        switchSource('liked', 'Liked Songs');
-    });
+    document.getElementById('source-liked').addEventListener('click', () => switchSource('liked', 'Liked Songs'));
 
     // ── Load playlists into sidebar ───────────────────────────────────────────
     async function loadPlaylists() {
@@ -1271,26 +863,19 @@
                 return;
             }
 
-            playlists.forEach(pl => {
+            playlists.filter(pl => !pl.isSpotifyOwned).forEach(pl => {
                 const item = document.createElement('div');
                 item.className = 'source-item';
                 item.dataset.source = pl.id;
                 item.innerHTML = `
                     ${pl.image
                         ? `<img class="source-art" src="${pl.image}" alt="${pl.name}" />`
-                        : `<div class="source-art-placeholder">
-                               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
-                           </div>`}
-                    <div class="source-info">
-                        <div class="source-name">${pl.name}</div>
-                        <div class="source-meta">${pl.trackCount} songs</div>
-                    </div>
-                `;
+                        : `<div class="source-art-placeholder"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>`}
+                    <div class="source-info"><div class="source-name">${pl.name}</div></div>`;
                 item.addEventListener('click', () => switchSource(pl.id, pl.name));
                 container.appendChild(item);
             });
         } catch (e) {
-            console.error('[library] failed to load playlists:', e);
             document.getElementById('playlist-list').innerHTML =
                 `<div style="padding:8px 14px;font-size:0.72rem;color:var(--muted);font-style:italic;">Failed to load</div>`;
         }
@@ -1320,19 +905,16 @@
             if (currentSource === 'liked') {
                 currentSongs = [...allSongs];
                 const list  = document.getElementById('song-list');
-                const query = document.getElementById('search').value.trim();
+                const query = searchInput.value.trim();
                 if (!query) {
                     const startIdx = allSongs.length - songs.length;
                     songs.forEach((song, i) => {
-                        list.insertBefore(makeSongRow(song, startIdx + i),
-                            document.getElementById('scroll-sentinel'));
+                        list.insertBefore(makeSongRow(song, startIdx + i), document.getElementById('scroll-sentinel'));
                     });
                     document.getElementById('count-label').textContent = `${allSongs.length} SONGS`;
                 }
             }
-        } catch (e) {
-            console.warn('[scroll] failed to load more songs:', e);
-        }
+        } catch (e) {}
         likedLoading = false;
     }
 
@@ -1348,7 +930,8 @@
         observer.observe(sentinel);
     }
 
-    // Initial empty queue render
+    // ── Init ──────────────────────────────────────────────────────────────────
+    renderSongs(currentSongs);
     renderQueue();
 </script>
 </body>

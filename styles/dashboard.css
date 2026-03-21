@@ -1,0 +1,315 @@
+/* ============================================================
+   dashboard.css — Dashboard-specific styles
+   Extends rooms.css (loaded first)
+   ============================================================ */
+
+/* ── Body override: dashboard scrolls, room does not ── */
+body {
+    height: auto;
+    overflow: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(var(--player-h) + 24px);
+}
+
+/* ── Header ── */
+header {
+    height: auto;
+    min-height: 73px;
+    padding: 16px 32px;
+    position: sticky;
+    top: 0;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-start-room {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--green);
+    color: #1a0020;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 100px;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-start-room:hover { background: var(--green-dim); transform: scale(1.03); }
+
+/* ── Layout: dashboard doesn't fix height ── */
+.layout {
+    overflow: visible;
+    min-height: calc(100vh - 73px);
+}
+
+/* ── Sidebar: sticky rather than fixed-height flex ── */
+#library-sidebar {
+    position: sticky;
+    top: 73px;
+    height: calc(100vh - 73px - var(--player-h));
+    /* override rooms.css transition that uses width/opacity */
+    transition: width 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+}
+
+/* ── Main ── */
+main {
+    padding: 40px 32px 0;
+    overflow-y: visible;
+    overflow-x: hidden;
+}
+
+/* ── Song rows: dashboard has extra meta column ── */
+.song-row {
+    grid-template-columns: 32px 48px 1fr auto 90px;
+}
+
+.song-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+.song-duration { font-size: 0.75rem; color: var(--muted2); }
+.song-added    { font-size: 0.65rem; color: var(--muted); }
+
+/* Dashboard row-actions: always visible (touch-friendly) */
+.row-actions {
+    opacity: 1;
+}
+
+/* ── Player bar: fixed at bottom, full-width ── */
+#player-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 32px;
+    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+body.drawer-open #player-bar { right: var(--drawer-w); }
+
+/* Stack sdk-status + queue toggle the same as room.ejs */
+.player-bar-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.player-bar-right #sdk-status {
+    font-size: 0.65rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.player-bar-right #sdk-status.ready { color: var(--green); }
+.player-bar-right #sdk-status.error { color: #e74c3c; }
+
+/* ── Queue remove buttons always visible ── */
+.btn-remove-queue {
+    opacity: 1;
+}
+.btn-remove-queue:hover,
+.btn-remove-queue:active { color: #e74c3c; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 80px 0; color: var(--muted); }
+.empty h2 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.2rem; }
+.empty p  { font-size: 0.85rem; margin-top: 8px; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 768px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    header { padding: 12px 16px; }
+
+    #library-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 200;
+        height: 100vh;
+        width: var(--sidebar-w) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    #library-sidebar.collapsed {
+        transform: translateX(-100%);
+        pointer-events: none !important;
+    }
+    #library-sidebar.open {
+        transform: translateX(0);
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        width: var(--sidebar-w) !important;
+    }
+
+    #sidebar-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: var(--sidebar-w);
+        right: 0;
+        z-index: 199;
+        background: rgba(0,0,0,0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+    #sidebar-backdrop.visible { opacity: 1; pointer-events: auto; }
+
+    main { padding: 16px 12px 0; }
+
+    .song-row {
+        grid-template-columns: 28px 40px 1fr auto;
+        gap: 10px;
+        padding: 8px 10px;
+    }
+    .song-meta { display: none; }
+    .song-art, .song-art-placeholder { width: 40px; height: 40px; }
+
+    #player-bar { padding: 0 12px; gap: 10px; height: 72px; }
+    .now-playing { width: auto; flex: 1; min-width: 0; }
+    #np-art { width: 40px; height: 40px; }
+    .volume-wrap { display: none; }
+    .control-btns { gap: 12px; }
+    #btn-queue-toggle { padding: 6px 8px; }
+
+    #queue-drawer { width: 100vw; bottom: 72px; }
+    body.drawer-open #player-bar { right: 0; }
+
+    .btn-start-room span { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 480px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    :root { --sidebar-w: 85vw; }
+
+    .song-row { grid-template-columns: 22px 36px 1fr auto; gap: 8px; padding: 7px 8px; }
+    .song-art, .song-art-placeholder { width: 36px; height: 36px; }
+
+    #search { width: 140px; }
+    #search:focus { width: 160px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 415px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 415px) {
+    :root { --sidebar-w: 90vw; --player-h: 80px; }
+
+    header { padding: 10px 12px; gap: 6px; }
+    .logo { font-size: 1rem; }
+    #btn-library-toggle { padding: 4px 7px; font-size: 0.62rem; }
+    .user-pill span { display: none; }
+    .user-pill { padding: 4px; }
+
+    main { padding: 12px 10px 0; }
+
+    .section-header { flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .header-title-group h1 { font-size: 1.2rem; }
+
+    .song-row { grid-template-columns: 20px 34px 1fr auto; gap: 7px; padding: 6px 6px; }
+    .song-art, .song-art-placeholder { width: 34px; height: 34px; }
+    .song-name { font-size: 0.78rem; }
+    .song-artist { font-size: 0.65rem; }
+    .btn-play, .btn-queue { padding: 4px 6px; font-size: 0.58rem; }
+
+    #player-bar { padding: 0 10px; gap: 8px; height: var(--player-h); }
+    #np-art { width: 36px; height: 36px; }
+    #np-name { font-size: 0.72rem; }
+    #np-artist { font-size: 0.63rem; }
+    #btn-queue-toggle { padding: 5px 7px; font-size: 0.62rem; }
+    .ctrl-btn svg { width: 14px; height: 14px; }
+    #btn-play-pause { width: 30px; height: 30px; }
+    .time-label { font-size: 0.58rem; width: 26px; }
+
+    #search { width: 120px; }
+    #search:focus { width: 140px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 360px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+    :root { --sidebar-w: 92vw; --player-h: 76px; }
+
+    header { padding: 8px 10px; }
+    .logo { font-size: 0.9rem; }
+    .host-badge { display: none; }
+    #btn-library-toggle svg ~ * { display: none; }
+
+    main { padding: 10px 8px 0; }
+
+    .header-title-group h1 { font-size: 1.1rem; }
+
+    .song-row { grid-template-columns: 18px 30px 1fr auto; gap: 6px; padding: 5px 5px; }
+    .song-art, .song-art-placeholder { width: 30px; height: 30px; }
+    .song-name { font-size: 0.74rem; }
+    .song-artist { font-size: 0.62rem; }
+    .btn-play, .btn-queue { padding: 3px 5px; font-size: 0.55rem; }
+
+    #player-bar { padding: 0 8px; gap: 6px; height: var(--player-h); }
+    #np-art { width: 32px; height: 32px; }
+    #np-name { font-size: 0.68rem; }
+    #np-artist { font-size: 0.6rem; }
+    #btn-queue-toggle { padding: 4px 6px; font-size: 0.6rem; }
+    #btn-play-pause { width: 28px; height: 28px; }
+    .control-btns { gap: 10px; }
+    .ctrl-btn svg { width: 13px; height: 13px; }
+    .time-label { font-size: 0.55rem; width: 22px; }
+
+    #search { width: 110px; }
+    #search:focus { width: 120px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 300px (absolute minimum)
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 300px) {
+    :root { --sidebar-w: 96vw; --player-h: 72px; }
+
+    header { padding: 7px 8px; }
+    .logo { font-size: 0.82rem; }
+    .room-id-pill { display: none; }
+    .btn-start-room { padding: 6px 10px; font-size: 0.7rem; }
+
+    main { padding: 8px 6px 0; }
+
+    .section-header { gap: 6px; margin-bottom: 8px; }
+    .header-title-group h1 { font-size: 1rem; }
+
+    .song-row { grid-template-columns: 16px 28px 1fr auto; gap: 4px; padding: 5px 4px; }
+    .song-art, .song-art-placeholder { width: 28px; height: 28px; }
+    .song-name { font-size: 0.7rem; }
+    .song-artist { font-size: 0.6rem; }
+    .btn-play, .btn-queue { padding: 3px 4px; font-size: 0.52rem; }
+
+    #player-bar { padding: 0 6px; gap: 5px; height: var(--player-h); }
+    #np-art { width: 28px; height: 28px; }
+    #np-name { font-size: 0.64rem; }
+    #np-artist { font-size: 0.58rem; }
+    #btn-queue-toggle { padding: 3px 5px; font-size: 0.58rem; }
+    #btn-play-pause { width: 26px; height: 26px; }
+    .control-btns { gap: 8px; }
+    .ctrl-btn svg { width: 12px; height: 12px; }
+
+    #search { width: 100px; }
+    #search:focus { width: 110px; }
+}

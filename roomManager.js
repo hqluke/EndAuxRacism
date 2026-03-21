@@ -43,6 +43,12 @@ function addToManualQueue(roomId, song) {
     console.log(`[queue:${roomId}] ADD manual ← "${song.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
 }
 
+function prependToManualQueue(roomId, song) {
+    const room = ensureRoom(roomId);
+    room.manualQueue.unshift(song);
+    console.log(`[queue:${roomId}] PREPEND manual ← "${song.name}" | manual=${room.manualQueue.length} auto=${room.autoQueue.length}`);
+}
+
 function removeFromQueue(roomId, queueType, index) {
     const room = ensureRoom(roomId);
     const key  = queueType === 'manual' ? 'manualQueue' : 'autoQueue';
@@ -131,6 +137,7 @@ module.exports = {
     ensureRoom,
     getQueue,
     addToManualQueue,
+    prependToManualQueue,
     removeFromQueue,
     reorderQueue,
     setAutoQueue,

@@ -62,7 +62,7 @@ passport.use(
                 id: profile.id,
                 displayName: profile.displayName,
                 email: profile.emails?.[0]?.value || null,
-                avatar: profile.photos?.[0] || null,
+                avatar: profile.photos?.[0]?.url || null,
                 accessToken,
                 refreshToken,
             };
@@ -139,20 +139,33 @@ io.on("connection", (socket) => {
     const userId = user?.id || `guest_${socket.id.slice(0, 6)}`;
     const displayName = user?.displayName || "Guest";
 
-    socket.on("join-room", (roomId) => {
+    socket.on("join-room", async (roomId) => {
         socket.join(roomId);
         socket.currentRoom = roomId;
         roomManager.ensureRoom(roomId);
-        // If this is an authenticated user (the host), store their token
         if (user?.accessToken) {
             roomManager.setHostToken(roomId, user.accessToken);
         }
-        socket.emit("queue-state", roomManager.getQueue(roomId));
-        socket.to(roomId).emit("user-joined", { userId, displayName });
+        const roomSockets = await io.in(roomId).fetchSockets();
+        const listenerCount = roomSockets.length;
+        const queueState = roomManager.getQueue(roomId);
+        // Send queue + count to the joiner
+        socket.emit("queue-state", { ...queueState, listenerCount });
+        // Tell everyone else someone joined
+        socket.to(roomId).emit("user-joined", { userId, displayName, listenerCount });
+        // Push updated count to the ENTIRE room so the host's label always updates
+        io.to(roomId).emit("listener-count", { listenerCount });
     });
 
     socket.on("queue-add", ({ roomId, song }) => {
         roomManager.addToManualQueue(roomId, song);
+        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+    });
+
+    // Prepend a song to the front of manualQueue (used by back button)
+    socket.on("queue-prepend", ({ roomId, song }) => {
+        console.log(`[socket:${roomId}] queue-prepend "${song?.name}"`);
+        roomManager.prependToManualQueue(roomId, song);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
@@ -192,15 +205,24 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    socket.on("queue-back", async ({ roomId }) => {
+        // Guests can request a back — server prepends nowPlaying to manual queue
+        // and emits play-track with the front of history (handled client-side by host)
+        // Since guests don't have history, we just signal the host to go back
+        socket.to(roomId).emit("guest-request-back");
+    });
+
     socket.on("now-playing-broadcast", ({ roomId, song }) => {
         socket.to(roomId).emit("now-playing", song);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
         if (socket.currentRoom) {
-            socket
-                .to(socket.currentRoom)
-                .emit("user-left", { userId, displayName });
+            const roomSockets = await io.in(socket.currentRoom).fetchSockets();
+            const listenerCount = roomSockets.length;
+            socket.to(socket.currentRoom).emit("user-left", { userId, displayName, listenerCount });
+            // Push updated count to remaining room members
+            io.to(socket.currentRoom).emit("listener-count", { listenerCount });
         }
     });
 });

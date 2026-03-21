@@ -438,7 +438,6 @@
                     value="80"
                 />
             </div>
-            <!-- FIX: stack status text + queue button vertically so song name has room -->
             <div class="player-bar-right">
                 <span
                     id="sdk-status-bar"
@@ -469,12 +468,22 @@
             <div id="guest-np">
                 <img id="guest-np-art" src="" alt="" />
                 <div>
-                    <div id="guest-np-name">Waiting for host to play...</div>
+                    <div id="guest-np-name">Waiting for host...</div>
                     <div id="guest-np-artist"></div>
                 </div>
             </div>
-            <!-- FIX: stacked vertically so song name has room to display -->
             <div class="guest-bar-controls">
+                <button id="btn-guest-prev" title="Previous song">
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                    </svg>
+                    Back
+                </button>
                 <button id="btn-guest-skip" title="Skip song">
                     <svg
                         width="16"
@@ -525,6 +534,7 @@
             let autoQueue        = [];
             let isDragging       = false;
             let lastAdvancedUri  = null;
+            let historyStack     = []; // up to 10 previously played songs
 
             // Library state
             let currentSource    = 'liked';
@@ -543,30 +553,50 @@
 
             socket.on('connect', () => socket.emit('join-room', roomId));
 
-            socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq }) => {
+            socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq, listenerCount }) => {
                 if (isDragging) return;
                 manualQueue = mq || [];
                 autoQueue   = aq || [];
                 renderQueue();
+                if (listenerCount !== undefined) {
+                    const el = document.getElementById('listener-label');
+                    if (el) el.textContent = `${listenerCount} listener${listenerCount === 1 ? '' : 's'}`;
+                }
             });
 
             socket.on('play-track', (song) => {
-                currentTrackUri = song.uri;
-                nowPlayingSong  = song;
+                // Don't set currentTrackUri here — player_state_changed owns it
+                nowPlayingSong = song;
                 renderQueue();
                 if (isHost) playSong(song.uri, false);
                 else updateGuestNowPlaying(song);
             });
 
             socket.on('now-playing', (song) => {
-                currentTrackUri = song.uri;
-                nowPlayingSong  = song;
+                // Don't set currentTrackUri here — only the host's player_state_changed owns it
+                nowPlayingSong = song;
                 renderQueue();
                 if (!isHost) updateGuestNowPlaying(song);
             });
 
-            socket.on('user-joined', ({ displayName }) => showToast(`${displayName} joined`));
-            socket.on('user-left',   ({ displayName }) => showToast(`${displayName} left`));
+            socket.on('user-joined', ({ displayName, listenerCount }) => {
+                showToast(`${displayName} joined`);
+            });
+            socket.on('user-left', ({ displayName, listenerCount }) => {
+                showToast(`${displayName} left`);
+            });
+
+            // Dedicated listener count event — always updates the label for everyone
+            socket.on('listener-count', ({ listenerCount }) => {
+                const el = document.getElementById('listener-label');
+                if (el) el.textContent = `${listenerCount} listener${listenerCount === 1 ? '' : 's'}`;
+            });
+
+            // Guest requested back — host executes it on their behalf
+            socket.on('guest-request-back', () => {
+                if (!isHost) return;
+                document.getElementById('btn-prev')?.click();
+            });
 
             // ── Copy invite link ──────────────────────────────────────────────────────
             document.getElementById('copy-room-link').addEventListener('click', () => {
@@ -619,11 +649,11 @@
 
                     const songData = { name: track.name, artist: track.artists.map(a => a.name).join(', '), image: track.album?.images?.[0]?.url || '', uri: track.uri };
 
-                    // Only update nowPlayingSong and re-render the queue when the track actually changes
+                    // Only update nowPlayingSong and re-render when the track actually changes
                     if (prevUri !== track.uri) {
                         nowPlayingSong = songData;
                         renderQueue();
-                        console.log(`[player] track changed: "${track.name}" (${track.uri})`);
+                        // console.log(`[player] track changed: "${track.name}" (${track.uri})`);
                     }
 
                     socket.emit('now-playing-broadcast', { roomId, song: songData });
@@ -635,17 +665,13 @@
                             updateProgress();
 
                             // ── Near-end advance ────────────────────────────────
-                            // When within 3s of the end, advance the queue and start
-                            // the next song immediately. This replaces the unreliable
-                            // "paused at position 0" detection which races against
-                            // Spotify's internal continuation.
                             if (
                                 currentDuration > 0 &&
                                 currentPosition >= currentDuration - 3000 &&
                                 lastAdvancedUri !== currentTrackUri
                             ) {
                                 lastAdvancedUri = currentTrackUri;
-                                console.log(`[player] near end of "${track.name}" — advancing queue`);
+                                // console.log(`[player] near end of "${track.name}" — advancing queue`);
                                 socket.emit('queue-advance', { roomId });
                             }
                         }, 500);
@@ -662,7 +688,35 @@
             };
 
             document.getElementById('btn-play-pause').addEventListener('click', () => player?.togglePlay());
-            document.getElementById('btn-prev').addEventListener('click', () => player?.previousTrack());
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                // More than 5 seconds in — restart current track
+                if (currentPosition > 5000) {
+                    player?.seek(0);
+                    return;
+                }
+                // History contains the currently playing song at [0].
+                // We need at least 2 entries to go "back" (current + one before it).
+                if (historyStack.length < 2) {
+                    player?.seek(0);
+                    return;
+                }
+
+                // Pop current song off the top — it's the one playing now
+                historyStack.shift();
+                // The new top is what we want to go back to
+                const prev = historyStack[0];
+                // console.log(`[history] back → "${prev.name}" — remaining: [${historyStack.map(s => s.name).join(', ')}]`);
+
+                // Put current song at front of manual queue so pressing next returns to it
+                if (nowPlayingSong) {
+                    // console.log(`[history] prepending "${nowPlayingSong.name}" to manual queue`);
+                    socket.emit('queue-prepend', { roomId, song: { ...nowPlayingSong } });
+                }
+
+                // skipHistoryPush=true — prev is already at historyStack[0], don't re-add it
+                lastAdvancedUri = currentTrackUri;
+                playSong(prev.uri, false, true);
+            });
             document.getElementById('btn-next').addEventListener('click', () => {
                 lastAdvancedUri = currentTrackUri;
                 socket.emit('queue-advance', { roomId });
@@ -717,20 +771,34 @@
             }
 
             // ── Play a track ──────────────────────────────────────────────────────────
-            async function playSong(trackUri, setAutoFromHere = true) {
+            async function playSong(trackUri, setAutoFromHere = true, skipHistoryPush = false) {
                 if (!isHost) return;
                 if (!deviceId) return alert('Player not ready yet');
-                console.log(`[player] playSong "${trackUri}" setAutoFromHere=${setAutoFromHere}`);
+                // console.log(`[player] playSong "${trackUri}" setAutoFromHere=${setAutoFromHere}`);
+
+                // Push the INCOMING song to history immediately when it starts playing,
+                // so back button always has an accurate recent-play list regardless of
+                // whether the previous song finished naturally or was manually skipped.
+                if (!skipHistoryPush) {
+                    // Find the song object for trackUri so we have name/artist/image
+                    const incoming = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri)
+                                  || (nowPlayingSong?.uri === trackUri ? nowPlayingSong : null);
+                    if (incoming) {
+                        // Only push if it's not already the most recent history entry
+                        if (historyStack[0]?.uri !== trackUri) {
+                            historyStack.unshift({ ...incoming });
+                            if (historyStack.length > 10) historyStack.pop();
+                            // console.log(`[history] pushed "${incoming.name}" — stack: [${historyStack.map(s => s.name).join(', ')}]`);
+                        }
+                    }
+                }
+
                 await fetch('/spotify/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trackUri, deviceId }),
                 });
-                currentTrackUri = trackUri;
-                // player_state_changed will fire and set nowPlayingSong/renderQueue,
-                // but also update immediately if we already know the song (from queue data)
                 if (nowPlayingSong?.uri !== trackUri) {
-                    // find song in known lists for instant queue drawer update
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
                 }
@@ -975,7 +1043,7 @@
                 try {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(guestPlaylists));
                 } catch (e) {
-                    console.warn('[apple] localStorage save failed:', e);
+                    // console.warn('[apple] localStorage save failed:', e);
                 }
             }
 
@@ -1121,7 +1189,7 @@
 
                 } catch (e) {
                     setImportStatus('Something went wrong. Check the link and try again.', true);
-                    console.error('[apple] import error:', e);
+                    // console.error('[apple] import error:', e);
                 } finally {
                     importBtn.disabled  = false;
                     importBtn.textContent = 'Import';
@@ -1263,6 +1331,14 @@
             const guestSkip = document.getElementById('btn-guest-skip');
             if (guestSkip) {
                 guestSkip.addEventListener('click', () => socket.emit('queue-advance', { roomId }));
+            }
+
+            // Guest back button — same 5s rule as host
+            const guestPrev = document.getElementById('btn-guest-prev');
+            if (guestPrev) {
+                guestPrev.addEventListener('click', () => {
+                    socket.emit('queue-back', { roomId });
+                });
             }
 
             // Init
