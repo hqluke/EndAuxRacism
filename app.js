@@ -152,7 +152,9 @@ io.on("connection", (socket) => {
         // Send queue + count to the joiner
         socket.emit("queue-state", { ...queueState, listenerCount });
         // Tell everyone else someone joined
-        socket.to(roomId).emit("user-joined", { userId, displayName, listenerCount });
+        socket
+            .to(roomId)
+            .emit("user-joined", { userId, displayName, listenerCount });
         // Push updated count to the ENTIRE room so the host's label always updates
         io.to(roomId).emit("listener-count", { listenerCount });
     });
@@ -180,11 +182,16 @@ io.on("connection", (socket) => {
     });
 
     // FIX: this handler was missing — dragging auto→manual never persisted server-side
-    socket.on("queue-move-to-manual", ({ roomId, fromAutoIndex, toManualIndex }) => {
-        console.log(`[socket:${roomId}] queue-move-to-manual fromAuto=${fromAutoIndex} toManual=${toManualIndex}`);
-        roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
-        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
-    });
+    socket.on(
+        "queue-move-to-manual",
+        ({ roomId, fromAutoIndex, toManualIndex }) => {
+            console.log(
+                `[socket:${roomId}] queue-move-to-manual fromAuto=${fromAutoIndex} toManual=${toManualIndex}`,
+            );
+            roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
+            io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+        },
+    );
 
     socket.on("queue-set-auto", ({ roomId, songs }) => {
         roomManager.setAutoQueue(roomId, songs);
@@ -195,7 +202,9 @@ io.on("connection", (socket) => {
         const next = roomManager.advance(roomId);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
         if (next) {
-            console.log(`[socket:${roomId}] queue-advance → playing "${next.name}"`);
+            console.log(
+                `[socket:${roomId}] queue-advance → playing "${next.name}"`,
+            );
             io.to(roomId).emit("play-track", next);
         }
     });
@@ -220,7 +229,9 @@ io.on("connection", (socket) => {
         if (socket.currentRoom) {
             const roomSockets = await io.in(socket.currentRoom).fetchSockets();
             const listenerCount = roomSockets.length;
-            socket.to(socket.currentRoom).emit("user-left", { userId, displayName, listenerCount });
+            socket
+                .to(socket.currentRoom)
+                .emit("user-left", { userId, displayName, listenerCount });
             // Push updated count to remaining room members
             io.to(socket.currentRoom).emit("listener-count", { listenerCount });
         }

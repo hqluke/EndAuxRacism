@@ -1954,3 +1954,73 @@ body.drawer-open #player-bar {
         display: none;
     }
 }
+
+/* ── Spotify Connect Modal ───────────────────────── */
+#connect-modal-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+}
+#connect-modal {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; width: min(420px, 90vw);
+    padding: 24px; display: flex; flex-direction: column; gap: 16px;
+}
+.connect-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+}
+.connect-modal-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+}
+.connect-modal-header button {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 4px; display: flex;
+}
+.connect-modal-hint { font-size: 0.75rem; color: var(--muted); margin: 0; }
+.connect-loading, .connect-empty {
+    font-size: 0.78rem; color: var(--muted); text-align: center; padding: 24px 0;
+}
+#connect-device-list { display: flex; flex-direction: column; gap: 6px; }
+.connect-device-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); transition: background 0.15s;
+}
+.connect-device-item.active { border-color: var(--green); }
+.connect-device-icon { color: var(--muted2); flex-shrink: 0; }
+.connect-device-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.connect-device-name {
+    font-size: 0.82rem; font-weight: 600; color: var(--fg);
+}
+.connect-device-name em { font-style: normal; color: var(--muted); font-weight: 400; }
+.connect-device-type { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+.connect-device-badge {
+    font-size: 0.65rem; color: var(--green); font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+}
+.btn-connect-select {
+    background: var(--surface3, #2a2a2a); border: 1px solid var(--border);
+    color: var(--fg); font-size: 0.72rem; padding: 5px 12px;
+    border-radius: 6px; cursor: pointer; white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+}
+.btn-connect-select:hover { background: var(--green); color: #000; border-color: var(--green); }
+.connect-modal-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 4px;
+}
+#connect-polling-status {
+    font-size: 0.65rem; color: var(--muted); font-family: 'DM Mono', monospace;
+}
+.btn-connect-refresh {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-size: 0.7rem; padding: 5px 10px; border-radius: 6px;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.btn-connect-refresh:hover { color: var(--fg); border-color: var(--fg); }
+#connect-modal-error {
+    font-size: 0.75rem; color: #e74c3c;
+    background: rgba(231,76,60,0.1); border-radius: 6px; padding: 8px 12px;
+}

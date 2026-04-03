@@ -187,9 +187,21 @@
                             autocomplete="off"
                         />
                     </div>
-                    <button class="btn-search-clear" id="btn-search-clear" style="display:none;" title="Clear search">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M18 6 6 18M6 6l12 12"/>
+                    <button
+                        class="btn-search-clear"
+                        id="btn-search-clear"
+                        style="display: none"
+                        title="Clear search"
+                    >
+                        <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                        >
+                            <path d="M18 6 6 18M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -281,7 +293,7 @@
                             <span class="count" id="guest-count-label"></span>
                         </div>
                     </div>
-                    <div class="search-row" style="margin-bottom: 20px;">
+                    <div class="search-row" style="margin-bottom: 20px">
                         <div class="search-wrap">
                             <svg
                                 width="14"
@@ -301,9 +313,21 @@
                                 autocomplete="off"
                             />
                         </div>
-                        <button class="btn-search-clear" id="btn-guest-search-clear" style="display:none;" title="Clear search">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M18 6 6 18M6 6l12 12"/>
+                        <button
+                            class="btn-search-clear"
+                            id="btn-guest-search-clear"
+                            style="display: none"
+                            title="Clear search"
+                        >
+                            <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.5"
+                            >
+                                <path d="M18 6 6 18M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -336,6 +360,72 @@
             <% } %>
         </div>
         <!-- /.layout -->
+
+        <!-- ── Spotify Connect Modal (host only) ── -->
+        <% if (isHost) { %>
+        <div id="connect-modal-overlay" style="display: none">
+            <div id="connect-modal">
+                <div class="connect-modal-header">
+                    <span class="connect-modal-title">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            style="color: var(--green); flex-shrink: 0"
+                        >
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
+                            />
+                        </svg>
+                        Spotify Connect
+                    </span>
+                    <button id="btn-close-connect-modal">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <p class="connect-modal-hint">
+                    Select a device to transfer playback. The queue will keep
+                    working on any device.
+                </p>
+                <div id="connect-device-list">
+                    <div class="connect-loading">Scanning for devices...</div>
+                </div>
+                <div id="connect-modal-error" style="display: none"></div>
+                <div class="connect-modal-footer">
+                    <span id="connect-polling-status"></span>
+                    <button
+                        id="btn-refresh-devices"
+                        class="btn-connect-refresh"
+                    >
+                        <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                        >
+                            <path d="M1 4v6h6M23 20v-6h-6" />
+                            <path
+                                d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"
+                            />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        <% } %>
 
         <!-- ── Queue Drawer ── -->
         <div id="queue-drawer">
@@ -447,6 +537,23 @@
                         white-space: nowrap;
                     "
                 ></span>
+                <button
+                    id="btn-spotify-connect"
+                    title="Choose playback device"
+                    style="display: none"
+                >
+                    <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 168 168"
+                        fill="currentColor"
+                    >
+                        <path
+                            d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.6 121.2c-1.6 2.6-5 3.4-7.6 1.8-20.8-12.7-47-15.6-77.8-8.6-3 .7-6-1.2-6.6-4.2-.7-3 1.2-6 4.2-6.6 33.7-7.7 62.6-4.4 86 9.9 2.5 1.6 3.3 5 1.8 7.7zm10.3-22.9c-2 3.2-6.2 4.2-9.4 2.2-23.8-14.6-60-18.9-88.1-10.3-3.6 1.1-7.4-1-8.5-4.6-1.1-3.6 1-7.4 4.6-8.5 32.1-9.8 71.9-5 99.2 11.8 3.1 1.9 4.1 6.2 2.2 9.4zm.9-23.8C108.4 57.5 58.3 55.8 29 64.5c-4.4 1.3-9-.9-10.3-5.3-1.3-4.4.9-9 5.3-10.3C57.8 39.2 112.2 41.2 141 60c4 2.4 5.2 7.6 2.8 11.5z"
+                        />
+                    </svg>
+                    Connect
+                </button>
                 <button id="btn-queue-toggle">
                     <svg
                         width="15"
@@ -522,7 +629,8 @@
             const isLoggedIn = <%= user ? 'true' : 'false' %>;
 
             // ── State ─────────────────────────────────────────────────────────────────
-            let deviceId         = null;
+            let deviceId         = null;  // browser SDK device ID — never changes after ready
+            let activeDeviceId   = null;  // currently active playback device — may be phone/desktop
             let player           = null;
             let currentTrackUri  = null;
             let nowPlayingSong   = null;   // { name, artist, image, uri } — shared host+guest
@@ -534,6 +642,8 @@
             let autoQueue        = [];
             let isDragging       = false;
             let lastAdvancedUri  = null;
+            let appTriggeredUri  = null;  // URI of last song WE triggered — stops polling from double-advancing
+            let preQueuedUri     = null;  // URI we've already pushed to Spotify's native queue
             let historyStack     = []; // up to 10 previously played songs
 
             // Library state
@@ -555,6 +665,7 @@
 
             socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq, listenerCount }) => {
                 if (isDragging) return;
+                const prevNext = (manualQueue[0] || autoQueue[0])?.uri;
                 manualQueue = mq || [];
                 autoQueue   = aq || [];
                 renderQueue();
@@ -562,14 +673,37 @@
                     const el = document.getElementById('listener-label');
                     if (el) el.textContent = `${listenerCount} listener${listenerCount === 1 ? '' : 's'}`;
                 }
+                // If the next-up song changed (manual reorder/add), invalidate preQueuedUri
+                // so the new song gets pushed next time preQueueNextSong is called naturally.
+                // Do NOT call preQueueNextSong here — it fires during normal transitions
+                // and causes double-queuing.
+                const newNext = (manualQueue[0] || autoQueue[0])?.uri;
+                if (isHost && newNext && newNext !== prevNext && newNext !== preQueuedUri) {
+                    console.log(`[queue-state] next-up changed: "${prevNext?.slice(-6) ?? 'null'}" → "${newNext.slice(-6)}" — invalidating preQueuedUri (was "${preQueuedUri?.slice(-6) ?? 'null'}")`);
+                    preQueuedUri = null;
+                }
             });
 
             socket.on('play-track', (song) => {
                 // Don't set currentTrackUri here — player_state_changed owns it
+                console.log(`[play-track] received "${song.name}" | currentTrackUri=${currentTrackUri?.slice(-6) ?? 'null'} song.uri=${song.uri.slice(-6)} match=${song.uri === currentTrackUri}`);
                 nowPlayingSong = song;
                 renderQueue();
-                if (isHost) playSong(song.uri, false);
-                else updateGuestNowPlaying(song);
+                if (isHost) {
+                    // If Spotify already transitioned to this track naturally (via
+                    // pre-queue), currentTrackUri already matches — don't call
+                    // playSong or it will restart the song from 0.
+                    if (song.uri !== currentTrackUri) {
+                        console.log(`[play-track] uri mismatch — calling playSong`);
+                        playSong(song.uri, false);
+                    } else {
+                        console.log(`[play-track] uri matches currentTrackUri — Spotify already playing, skipping playSong`);
+                    }
+                    // If already playing naturally, do nothing — player_state_changed
+                    // is the single source of truth for pre-queuing the next song.
+                } else {
+                    updateGuestNowPlaying(song);
+                }
             });
 
             socket.on('now-playing', (song) => {
@@ -627,15 +761,23 @@
                     volume: 0.8,
                 });
 
-                player.addListener('ready', ({ device_id }) => {
-                    deviceId = device_id;
-                    setStatus('ready', '● Player ready');
-                });
-
-                player.addListener('not_ready', () => setStatus('error', '✕ Disconnected'));
-
                 player.addListener('player_state_changed', (state) => {
                     if (!state) return;
+
+                    // The Spotify SDK fires player_state_changed even when another device
+                    // (e.g. the host's phone) is the active player — it mirrors state.
+                    // Only reclaim SDK control if the browser SDK is actually the active
+                    // device, i.e. activeDeviceId still points at the browser SDK device.
+                    const sdkIsActive = activeDeviceId === deviceId;
+
+                    if (sdkIsActive) {
+                        sdkIsActiveDevice = true;
+                        stopPolling();
+                    }
+                    // If the SDK is just mirroring another device, ignore this event —
+                    // polling owns state in that case.
+                    if (!sdkIsActive) return;
+
                     const track = state.track_window.current_track;
                     const prevUri = currentTrackUri;
                     isPlaying       = !state.paused;
@@ -653,7 +795,27 @@
                     if (prevUri !== track.uri) {
                         nowPlayingSong = songData;
                         renderQueue();
-                        // console.log(`[player] track changed: "${track.name}" (${track.uri})`);
+
+                        // Capture then reset — new track means fresh pre-queue state
+                        const wasPreQueued = preQueuedUri;
+                        preQueuedUri = null;
+
+                        console.log(`[sdk] track changed: "${track.name}" | prevUri=${prevUri?.slice(-6)} wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} appTriggeredUri=${appTriggeredUri?.slice(-6) ?? 'null'}`);
+                        console.log(`[sdk] queue at change — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
+
+                        if (track.uri === wasPreQueued && prevUri !== null) {
+                            // Spotify naturally advanced to our pre-queued song — clean transition.
+                            console.log(`[sdk] ✓ natural transition matched preQueuedUri — emitting queue-advance, skipping playSong`);
+                            appTriggeredUri = track.uri;
+                            socket.emit('queue-advance', { roomId });
+                        } else if (prevUri !== null) {
+                            console.log(`[sdk] ✗ track change did NOT match preQueuedUri — wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} track=${track.uri.slice(-6)}`);
+                        }
+
+                        // Wait for queue-advance to settle on the server before pre-queuing.
+                        // 1500ms gives the socket round-trip time to complete so manualQueue[0]
+                        // reflects the correct next song (not the one that just started).
+                        setTimeout(preQueueNextSong, 1500);
                     }
 
                     socket.emit('now-playing-broadcast', { roomId, song: songData });
@@ -664,15 +826,19 @@
                             currentPosition += 500;
                             updateProgress();
 
-                            // ── Near-end advance ────────────────────────────────
+                            // ── Near-end pre-queue ──────────────────────────────
+                            // Push the next song into Spotify's native queue ~8s
+                            // before the end so the phone/desktop transitions cleanly.
+                            // preQueuedUri deduplicates — once pushed, we won't push again
+                            // until the next track starts and resets it.
                             if (
+                                sdkIsActiveDevice &&
                                 currentDuration > 0 &&
-                                currentPosition >= currentDuration - 3000 &&
-                                lastAdvancedUri !== currentTrackUri
+                                currentPosition >= currentDuration - 8000 &&
+                                preQueuedUri === null
                             ) {
-                                lastAdvancedUri = currentTrackUri;
-                                // console.log(`[player] near end of "${track.name}" — advancing queue`);
-                                socket.emit('queue-advance', { roomId });
+                                console.log(`[sdk] near-end triggered at ${currentPosition}/${currentDuration} — calling preQueueNextSong`);
+                                preQueueNextSong();
                             }
                         }, 500);
                     }
@@ -683,6 +849,23 @@
                 player.addListener('initialization_error', ({ message }) => setStatus('error', `Init: ${message}`));
                 player.addListener('authentication_error',  ({ message }) => setStatus('error', `Auth: ${message}`));
                 player.addListener('account_error', () => setStatus('error', 'Premium required'));
+
+                // Hook into SDK ready/not_ready to track whether SDK is the active device
+                player.addListener('ready', ({ device_id }) => {
+                    deviceId = device_id;
+                    activeDeviceId = device_id;
+                    sdkIsActiveDevice = true;
+                    stopPolling();
+                    setStatus('ready', '● Player ready');
+                    // Reveal the Connect button now that we know devices exist
+                    document.getElementById('btn-spotify-connect').style.display = '';
+                });
+
+                player.addListener('not_ready', () => {
+                    sdkIsActiveDevice = false;
+                    setStatus('error', '✕ Disconnected');
+                    startPolling();
+                });
 
                 player.connect();
             };
@@ -714,11 +897,14 @@
                 }
 
                 // skipHistoryPush=true — prev is already at historyStack[0], don't re-add it
+                appTriggeredUri = prev.uri;
                 lastAdvancedUri = currentTrackUri;
                 playSong(prev.uri, false, true);
             });
             document.getElementById('btn-next').addEventListener('click', () => {
+                appTriggeredUri = currentTrackUri;
                 lastAdvancedUri = currentTrackUri;
+                preQueuedUri    = null; // will be set fresh by playSong after advance
                 socket.emit('queue-advance', { roomId });
             });
             document.getElementById('volume-slider').addEventListener('input', (e) => player?.setVolume(e.target.value / 100));
@@ -728,6 +914,251 @@
                 const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
                 player.seek(seekTo); currentPosition = seekTo; updateProgress();
             });
+
+            // ── Spotify Connect: device picker + polling fallback ─────────────────────
+            //
+            // When the host transfers playback to another device (phone app, desktop,
+            // etc.) and that device goes offline, the Web Playback SDK stops firing
+            // player_state_changed, so queue advancement stalls. We fix this with a
+            // polling fallback that watches GET /me/player every 3 s whenever the SDK
+            // is not the active device.
+            //
+            // The Connect button opens a modal listing all active Spotify devices.
+            // Selecting one calls PUT /me/player to transfer playback seamlessly.
+
+            let pollingInterval    = null;
+            let pollingLastUri     = null;
+            let pollingLastPos     = 0;
+            let sdkIsActiveDevice  = false; // true when SDK player is the active device
+            let cachedPollingToken = null;  // reused across polls; cleared on 401
+
+            function startPolling() {
+                if (pollingInterval) return;
+                console.log('[connect] starting playback polling (SDK not active device)');
+                const pollingStatusEl = document.getElementById('connect-polling-status');
+                if (pollingStatusEl) pollingStatusEl.textContent = '⚡ Polling mode';
+                pollingInterval = setInterval(pollPlaybackState, 3000);
+            }
+
+            function stopPolling() {
+                if (!pollingInterval) return;
+                console.log('[connect] stopping playback polling (SDK reclaimed device)');
+                const pollingStatusEl = document.getElementById('connect-polling-status');
+                if (pollingStatusEl) pollingStatusEl.textContent = '';
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+
+            async function pollPlaybackState() {
+                // If the SDK has reclaimed the device, stop polling
+                if (sdkIsActiveDevice) { stopPolling(); return; }
+                try {
+                    // Reuse cached token — only re-fetch if missing or last call returned 401
+                    if (!cachedPollingToken) {
+                        const res = await fetch('/spotify/token').then(r => r.json());
+                        cachedPollingToken = res.accessToken;
+                    }
+                    if (!cachedPollingToken) return;
+
+                    const stateRes = await fetch('https://api.spotify.com/v1/me/player', {
+                        headers: { Authorization: `Bearer ${cachedPollingToken}` },
+                    });
+
+                    if (stateRes.status === 401) {
+                        // Token expired — clear cache and retry next cycle
+                        cachedPollingToken = null;
+                        return;
+                    }
+
+                    // 204 = nothing playing; 200 = state available
+                    if (stateRes.status === 204 || !stateRes.ok) return;
+
+                    const state = await stateRes.json();
+                    if (!state || !state.item) return;
+
+                    const uri      = state.item.uri;
+                    const pos      = state.progress_ms || 0;
+                    const duration = state.item.duration_ms || 0;
+                    const playing  = state.is_playing;
+
+                    // Update progress bar even in polling mode
+                    currentPosition = pos;
+                    currentDuration = duration;
+                    isPlaying       = playing;
+                    updateProgress();
+                    updatePlayPauseIcon();
+
+                    // Broadcast now-playing to guests if track changed
+                    if (uri !== pollingLastUri) {
+                        const wasPreQueued = preQueuedUri;
+                        preQueuedUri = null; // reset for new track
+
+                        console.log(`[poll] track changed: "${state.item.name}" | wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} appTriggeredUri=${appTriggeredUri?.slice(-6) ?? 'null'}`);
+
+                        if (pollingLastUri !== null && uri === wasPreQueued) {
+                            console.log(`[poll] ✓ natural transition matched preQueuedUri — emitting queue-advance`);
+                            appTriggeredUri = uri;
+                            socket.emit('queue-advance', { roomId });
+                        } else if (pollingLastUri !== null && appTriggeredUri !== uri) {
+                            console.log(`[poll] native skip detected — "${state.item.name}" — advancing queue`);
+                            appTriggeredUri = uri;
+                            socket.emit('queue-advance', { roomId });
+                        } else {
+                            console.log(`[poll] track change suppressed (appTriggered or first track)`);
+                        }
+
+                        pollingLastUri = uri;
+                        const songData = {
+                            name:   state.item.name,
+                            artist: state.item.artists.map(a => a.name).join(', '),
+                            image:  state.item.album?.images?.[0]?.url || '',
+                            uri,
+                        };
+                        nowPlayingSong = songData;
+                        updateNowPlaying(state.item);
+                        renderQueue();
+                        socket.emit('now-playing-broadcast', { roomId, song: songData });
+
+                        // Wait for queue-advance server round-trip before pre-queuing
+                        setTimeout(preQueueNextSong, 1500);
+                    }
+
+                    // Near-end detection — pre-queue next song ~8s from end so
+                    // Spotify's native transition is seamless. The polling's track-change
+                    // detection will call queue-advance once the new track starts.
+                    // preQueuedUri deduplicates — only fires once per track.
+                    if (
+                        playing &&
+                        duration > 0 &&
+                        pos >= duration - 8000 &&
+                        preQueuedUri === null
+                    ) {
+                        console.log(`[poll] near-end at ${pos}/${duration} — calling preQueueNextSong`);
+                        preQueueNextSong();
+                    }
+                } catch (e) {
+                    console.warn('[connect] poll error:', e.message);
+                }
+            }
+
+            const connectOverlay = document.getElementById('connect-modal-overlay');
+            const connectBtn     = document.getElementById('btn-spotify-connect');
+            const closeConnectBtn = document.getElementById('btn-close-connect-modal');
+            const refreshBtn     = document.getElementById('btn-refresh-devices');
+
+            function openConnectModal() {
+                connectOverlay.style.display = 'flex';
+                loadDevices();
+            }
+            function closeConnectModal() {
+                connectOverlay.style.display = 'none';
+            }
+
+            connectBtn.addEventListener('click', openConnectModal);
+            closeConnectBtn.addEventListener('click', closeConnectModal);
+            connectOverlay.addEventListener('click', (e) => {
+                if (e.target === connectOverlay) closeConnectModal();
+            });
+            refreshBtn.addEventListener('click', loadDevices);
+
+            function deviceIcon(type) {
+                const icons = {
+                    Computer:  `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>`,
+                    Smartphone:`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H7V4h10v12zm-5 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>`,
+                    Speaker:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0-6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>`,
+                    TV:        `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>`,
+                    CastAudio: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-2a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0-6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>`,
+                };
+                return icons[type] || icons.Computer;
+            }
+
+            async function loadDevices() {
+                const list  = document.getElementById('connect-device-list');
+                const error = document.getElementById('connect-modal-error');
+                error.style.display = 'none';
+                list.innerHTML = '<div class="connect-loading">Scanning for devices...</div>';
+
+                try {
+                    const res  = await fetch('/spotify/devices');
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed to load devices');
+
+                    const devices = data.devices || [];
+                    list.innerHTML = '';
+
+                    if (devices.length === 0) {
+                        list.innerHTML = `<div class="connect-empty">
+                            No devices found. Open Spotify on your phone or desktop and try again.
+                        </div>`;
+                        return;
+                    }
+
+                    devices.forEach(device => {
+                        const isThisSDK = device.id === deviceId;
+                        const item = document.createElement('div');
+                        item.className = 'connect-device-item' + (device.is_active ? ' active' : '');
+                        item.innerHTML = `
+                            <span class="connect-device-icon">${deviceIcon(device.type)}</span>
+                            <span class="connect-device-info">
+                                <span class="connect-device-name">${device.name}${isThisSDK ? ' <em>(this browser)</em>' : ''}</span>
+                                <span class="connect-device-type">${device.type}${device.volume_percent != null ? ` · ${device.volume_percent}%` : ''}</span>
+                            </span>
+                            ${device.is_active
+                                ? '<span class="connect-device-badge">Playing here</span>'
+                                : '<button class="btn-connect-select">Switch</button>'}
+                        `;
+
+                        if (!device.is_active) {
+                            item.querySelector('.btn-connect-select').addEventListener('click', () => {
+                                transferToDevice(device.id, device.name);
+                            });
+                        }
+                        list.appendChild(item);
+                    });
+                } catch (e) {
+                    list.innerHTML = '';
+                    error.textContent = e.message;
+                    error.style.display = '';
+                }
+            }
+
+            async function transferToDevice(targetDeviceId, deviceName) {
+                const list  = document.getElementById('connect-device-list');
+                const error = document.getElementById('connect-modal-error');
+                error.style.display = 'none';
+                list.innerHTML = `<div class="connect-loading">Connecting to ${deviceName}...</div>`;
+
+                try {
+                    const res  = await fetch('/spotify/transfer', {
+                        method:  'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ deviceId: targetDeviceId, play: isPlaying }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Transfer failed');
+
+                    showToast(`Playing on ${deviceName}`);
+
+                    // If we're leaving the SDK player, switch on polling immediately
+                    if (targetDeviceId !== deviceId) {
+                        activeDeviceId = targetDeviceId;
+                        sdkIsActiveDevice = false;
+                        startPolling();
+                        setStatus('info', `▶ Playing on ${deviceName}`);
+                    } else {
+                        // Transferring back to the browser SDK
+                        activeDeviceId = deviceId;
+                        sdkIsActiveDevice = true;
+                        stopPolling();
+                    }
+
+                    closeConnectModal();
+                } catch (e) {
+                    list.innerHTML = '';
+                    error.textContent = e.message;
+                    error.style.display = '';
+                }
+            }
 
             function setStatus(type, msg) {
                 const el = document.getElementById('sdk-status');
@@ -773,7 +1204,7 @@
             // ── Play a track ──────────────────────────────────────────────────────────
             async function playSong(trackUri, setAutoFromHere = true, skipHistoryPush = false) {
                 if (!isHost) return;
-                if (!deviceId) return alert('Player not ready yet');
+                if (!activeDeviceId) return alert('Player not ready yet');
                 // console.log(`[player] playSong "${trackUri}" setAutoFromHere=${setAutoFromHere}`);
 
                 // Push the INCOMING song to history immediately when it starts playing,
@@ -793,11 +1224,21 @@
                     }
                 }
 
+                // Mark this URI as app-triggered so polling doesn't treat it as a native skip
+                appTriggeredUri = trackUri;
+                preQueuedUri    = null; // reset — we're explicitly changing tracks
+
+                console.log(`[playSong] calling PUT /play for "${trackUri.slice(-6)}" | setAutoFromHere=${setAutoFromHere} skipHistoryPush=${skipHistoryPush}`);
+                console.log(`[playSong] queue at call — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
+
                 await fetch('/spotify/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trackUri, deviceId }),
+                    body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
                 });
+                // preQueueNextSong is intentionally NOT called here.
+                // player_state_changed will fire when Spotify confirms playback,
+                // and that is the single place we pre-queue the next song.
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
@@ -806,6 +1247,51 @@
                     const idx   = currentSongs.findIndex(s => s.uri === trackUri);
                     const after = idx >= 0 ? currentSongs.slice(idx + 1) : currentSongs;
                     socket.emit('queue-set-auto', { roomId, songs: after.slice(0, 30) });
+                }
+            }
+
+            // ── Pre-queue next song into Spotify's native queue ───────────────────────
+            // This is the SINGLE place we push to Spotify's queue. It is called only
+            // from player_state_changed and pollPlaybackState on track change.
+            // preQueuedUri tracks what we've already pushed so we never push twice.
+            let preQueueInFlight = false;
+            async function preQueueNextSong() {
+                if (!isHost) return;
+                if (preQueueInFlight) {
+                    console.log(`[prequeue] SKIP — already in flight`);
+                    return;
+                }
+                const nextSong = manualQueue[0] || autoQueue[0];
+                if (!nextSong?.uri) {
+                    console.log(`[prequeue] SKIP — queue is empty`);
+                    return;
+                }
+                if (nextSong.uri === preQueuedUri) {
+                    console.log(`[prequeue] SKIP — already queued "${nextSong.name}"`);
+                    return;
+                }
+                if (nextSong.uri === currentTrackUri) {
+                    console.log(`[prequeue] SKIP — next song "${nextSong.name}" is already playing (currentTrackUri match)`);
+                    return;
+                }
+
+                console.log(`[prequeue] PUSHING "${nextSong.name}" → Spotify native queue | currentTrack=${currentTrackUri?.slice(-6)} preQueuedUri was=${preQueuedUri?.slice(-6) ?? 'null'}`);
+                console.log(`[prequeue] full queue state — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
+                preQueuedUri    = nextSong.uri;
+                preQueueInFlight = true;
+
+                try {
+                    await fetch('/spotify/queue', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ trackUri: nextSong.uri }),
+                    });
+                    console.log(`[prequeue] ✓ successfully queued "${nextSong.name}"`);
+                } catch (e) {
+                    console.warn('[prequeue] ✗ failed:', e.message);
+                    preQueuedUri = null; // allow retry
+                } finally {
+                    preQueueInFlight = false;
                 }
             }
 

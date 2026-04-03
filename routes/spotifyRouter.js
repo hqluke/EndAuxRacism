@@ -9,5 +9,7 @@ router.post("/queue", spotifyController.addToQueue);
 router.get("/liked", spotifyController.getLikedSongs);
 router.get("/playlists", spotifyController.getPlaylists);
 router.get("/playlists/:playlistId/tracks", spotifyController.getPlaylistTracks);
+router.get("/devices", spotifyController.getDevices);
+router.put("/transfer", spotifyController.transferPlayback);
 
 module.exports = router;

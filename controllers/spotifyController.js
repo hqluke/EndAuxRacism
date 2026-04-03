@@ -159,8 +159,10 @@ const addToQueue = async (req, res, next) => {
         const { trackUri, deviceId } = req.body;
         const accessToken = req.user.accessToken;
 
+        // device_id is optional — omit it to let Spotify use the active device
+        const deviceParam = deviceId ? `&device_id=${deviceId}` : '';
         const response = await spotifyFetch(
-            `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(trackUri)}&device_id=${deviceId}`,
+            `https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(trackUri)}${deviceParam}`,
             {
                 method: "POST",
                 headers: {
@@ -359,3 +361,55 @@ module.exports = {
     setCache,
     spotifyFetch,
 };
+
+// Fetch all available Spotify devices for the current user
+const getDevices = async (req, res, next) => {
+    try {
+        const accessToken = req.user.accessToken;
+        const response = await spotifyFetch(
+            'https://api.spotify.com/v1/me/player/devices',
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            return res.status(response.status).json({ error: err?.error?.message || 'Failed to fetch devices' });
+        }
+        const data = await response.json();
+        res.json({ devices: data.devices || [] });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Transfer playback to a specific device
+// Body: { deviceId, play? }
+const transferPlayback = async (req, res, next) => {
+    try {
+        const { deviceId, play } = req.body;
+        const accessToken = req.user.accessToken;
+        const response = await spotifyFetch(
+            'https://api.spotify.com/v1/me/player',
+            {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    device_ids: [deviceId],
+                    play: play !== false,
+                }),
+            },
+        );
+        if (!response.ok && response.status !== 204) {
+            const err = await response.json().catch(() => ({}));
+            return res.status(response.status).json({ error: err?.error?.message || 'Transfer failed' });
+        }
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+};
+
+module.exports.getDevices = getDevices;
+module.exports.transferPlayback = transferPlayback;
