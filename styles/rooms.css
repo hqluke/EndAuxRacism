@@ -1070,6 +1070,26 @@ body.drawer-open #player-bar {
     position: relative;
 }
 
+/* ── Guest bar top progress strip (mirrors host #player-bar-progress) ── */
+#guest-bar-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--surface2);
+    pointer-events: none;
+    z-index: 1;
+}
+#guest-bar-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    border-radius: 0 1px 1px 0;
+    transition: width 0.5s linear;
+    pointer-events: none;
+}
+
 #guest-np {
     display: flex;
     align-items: center;
@@ -2218,6 +2238,21 @@ body.drawer-open #player-bar {
     background: var(--surface2);
 }
 #now-playing-tap:active {
+    background: var(--surface3);
+}
+
+/* Guest now-playing section — tappable to open modal */
+#guest-np {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    padding: 6px 8px;
+    margin: -6px -8px;
+}
+#guest-np:hover {
+    background: var(--surface2);
+}
+#guest-np:active {
     background: var(--surface3);
 }
 

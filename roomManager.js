@@ -94,6 +94,12 @@ function setAutoQueue(roomId, songs) {
     console.log(`[queue:${roomId}] SET auto (${songs.length} songs) — first: "${songs[0]?.name}"`);
 }
 
+function setManualQueue(roomId, songs) {
+    const room = ensureRoom(roomId);
+    room.manualQueue = [...songs];
+    console.log(`[queue:${roomId}] SET manual (${songs.length} songs) — shuffled`);
+}
+
 /**
  * Advance the queue — manual queue takes priority over auto queue.
  * Returns the next song object, or null if both queues are empty.
@@ -161,6 +167,7 @@ module.exports = {
     removeFromQueue,
     reorderQueue,
     setAutoQueue,
+    setManualQueue,
     advance,
     replenishAutoQueue,
     moveToManualQueue,

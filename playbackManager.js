@@ -148,10 +148,12 @@ async function pollTick(roomId) {
         poller.advanceInFlight = false; // new track confirmed — reset guard
 
         const songData = {
-            name:   state.item.name,
-            artist: state.item.artists.map(a => a.name).join(', '),
-            image:  state.item.album?.images?.[0]?.url || '',
+            name:        state.item.name,
+            artist:      state.item.artists.map(a => a.name).join(', '),
+            image:       state.item.album?.images?.[0]?.url || '',
             uri,
+            duration_ms: duration,
+            progress_ms: pos,
         };
 
         roomManager.setNowPlaying(roomId, songData);

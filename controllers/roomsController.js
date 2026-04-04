@@ -1,4 +1,5 @@
 const { getCached, setCache, spotifyFetch } = require("./spotifyController");
+const roomManager = require("../roomManager");
 
 const getRoom = async (req, res, next) => {
     try {
@@ -58,4 +59,13 @@ function msToMinSec(ms) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-module.exports = { getRoom };
+// Returns current now-playing for a room — no auth required so guests can call it.
+// Includes duration_ms and progress_ms so the guest progress bar works.
+const getRoomNowPlaying = (req, res) => {
+    const { roomId } = req.params;
+    const nowPlaying = roomManager.getNowPlaying(roomId);
+    if (!nowPlaying) return res.json(null);
+    res.json(nowPlaying);
+};
+
+module.exports = { getRoom, getRoomNowPlaying };

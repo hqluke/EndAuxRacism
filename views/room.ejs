@@ -247,18 +247,6 @@
                         </svg>
                     </button>
                 </div>
-                <% if (isHost) { %>
-                <div
-                    id="sdk-status"
-                    style="
-                        font-size: 0.65rem;
-                        color: var(--muted);
-                        margin-bottom: 16px;
-                    "
-                >
-                    Connecting to Spotify player...
-                </div>
-                <% } %>
                 <div class="song-list" id="song-list"></div>
                 <div class="no-results" id="no-results">no matches found</div>
             </main>
@@ -473,6 +461,24 @@
         <div id="queue-drawer">
             <div class="drawer-header">
                 <span class="drawer-title">Queue</span>
+                <button id="btn-shuffle-queue" class="btn-shuffle-library" title="Shuffle manual queue">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="16 3 21 3 21 8" />
+                        <line x1="4" y1="20" x2="21" y2="3" />
+                        <polyline points="21 16 21 21 16 21" />
+                        <line x1="15" y1="15" x2="21" y2="21" />
+                    </svg>
+                    Shuffle
+                </button>
                 <button id="btn-close-drawer">
                     <svg
                         width="18"
@@ -694,20 +700,12 @@
                         </svg>
                     </button>
                     <button
-                        class="ctrl-btn np-modal-ctrl-btn np-modal-ctrl-btn--placeholder"
-                        title="More (coming soon)"
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="np-modal-btn-queue"
+                        title="Queue"
                     >
-                        <svg
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <circle cx="12" cy="12" r="1" />
-                            <circle cx="19" cy="12" r="1" />
-                            <circle cx="5" cy="12" r="1" />
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
                         </svg>
                     </button>
                 </div>
@@ -717,7 +715,10 @@
         <% } else { %>
         <!-- ── Guest Bar ── -->
         <div id="guest-bar">
-            <div id="guest-np">
+            <div id="guest-bar-progress">
+                <div id="guest-bar-progress-fill"></div>
+            </div>
+            <div id="guest-np" id="guest-np-tap" title="Expand player">
                 <img id="guest-np-art" src="" alt="" />
                 <div>
                     <div id="guest-np-name">Waiting for host...</div>
@@ -760,6 +761,83 @@
                     </svg>
                     Queue
                 </button>
+            </div>
+        </div>
+
+        <!-- ── Guest Now Playing Modal ── -->
+        <div id="guest-np-modal" class="np-modal" aria-hidden="true">
+            <button id="guest-np-modal-close" class="np-modal-close" title="Close">
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="np-modal-inner" id="guest-np-modal-inner">
+                <img id="guest-np-modal-art" src="" alt="" class="np-modal-art" />
+                <div class="np-modal-info">
+                    <div id="guest-np-modal-name" class="np-modal-name">
+                        Waiting for host...
+                    </div>
+                    <div id="guest-np-modal-artist" class="np-modal-artist"></div>
+                </div>
+                <div class="np-modal-progress">
+                    <div class="progress-wrap">
+                        <span class="time-label" id="guest-np-modal-time-current">0:00</span>
+                        <div
+                            id="guest-np-modal-progress-bar"
+                            class="np-modal-progress-bar"
+                        >
+                            <div
+                                id="guest-np-modal-progress-fill"
+                                class="np-modal-progress-fill"
+                            ></div>
+                        </div>
+                        <span class="time-label right" id="guest-np-modal-time-total">0:00</span>
+                    </div>
+                </div>
+                <div class="np-modal-controls">
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn np-modal-ctrl-btn--placeholder"
+                        title="Guests cannot pause"
+                        style="opacity: 0; pointer-events: none"
+                    >
+                        <!-- placeholder to keep layout symmetric -->
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/></svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="guest-np-modal-btn-prev"
+                        title="Back"
+                    >
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                        </svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="guest-np-modal-btn-next"
+                        title="Skip"
+                    >
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                        </svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="guest-np-modal-btn-queue"
+                        title="Queue"
+                    >
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
         <% } %> <% if (isHost) { %>
@@ -808,7 +886,22 @@
             // ── Socket ────────────────────────────────────────────────────────────────
             const socket = io();
 
-            socket.on('connect', () => socket.emit('join-room', roomId));
+            socket.on('connect', () => {
+                socket.emit('join-room', roomId);
+                // Guests: fetch current now-playing state to seed the progress bar
+                // in case the socket now-playing event arrives before this resolves.
+                if (!isHost) {
+                    fetch(`/rooms/${roomId}/now-playing`)
+                        .then(r => r.json())
+                        .then(song => {
+                            if (!song) return;
+                            nowPlayingSong = song;
+                            updateGuestNowPlaying(song);
+                            startGuestProgressTicker();
+                        })
+                        .catch(() => {});
+                }
+            });
 
             socket.on('queue-state', ({ manualQueue: mq, autoQueue: aq, listenerCount }) => {
                 if (isDragging) return;
@@ -837,6 +930,7 @@
                     playSong(song.uri, false);
                 } else {
                     updateGuestNowPlaying(song);
+                    startGuestProgressTicker();
                 }
             });
 
@@ -844,7 +938,10 @@
                 // Don't set currentTrackUri here — only the host's player_state_changed owns it
                 nowPlayingSong = song;
                 renderQueue();
-                if (!isHost) updateGuestNowPlaying(song);
+                if (!isHost) {
+                    updateGuestNowPlaying(song);
+                    startGuestProgressTicker();
+                }
             });
 
             socket.on('user-joined', ({ displayName, listenerCount }) => {
@@ -882,6 +979,76 @@
 
             toggleBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeDrawer() : openDrawer());
             closeBtn.addEventListener('click', closeDrawer);
+
+            // ── Swipe right to close queue drawer ─────────────────────────────────────
+            // Mirrors the np-modal swipe-down pattern.
+            // Only fires when NOT dragging a queue item or pressing a button.
+            (function initDrawerSwipe() {
+                let swipeStartX = null;
+                let swipeStartY = null;
+                const SWIPE_H_THRESHOLD = 72;  // px rightward to commit close
+                const SWIPE_V_LOCK      = 12;  // px vertical drift that cancels the gesture
+
+                drawer.addEventListener('touchstart', (e) => {
+                    // Ignore if touching a queue item (could be a drag) or any button
+                    const draggable = e.target.closest('.queue-item');
+                    const btn       = e.target.closest('button');
+                    if (draggable || btn) { swipeStartX = null; return; }
+                    const t = e.touches[0];
+                    swipeStartX = t.clientX;
+                    swipeStartY = t.clientY;
+                    drawer.style.transition = 'none';
+                }, { passive: true });
+
+                drawer.addEventListener('touchmove', (e) => {
+                    if (swipeStartX === null) return;
+                    const t  = e.touches[0];
+                    const dx = t.clientX - swipeStartX;
+                    const dy = Math.abs(t.clientY - swipeStartY);
+                    // Cancel if the gesture is more vertical than horizontal
+                    if (dy > SWIPE_V_LOCK && Math.abs(dx) < dy) { swipeStartX = null; drawer.style.transform = ''; return; }
+                    if (dx > 0) {
+                        drawer.style.transform = `translateX(${dx}px)`;
+                    }
+                }, { passive: true });
+
+                drawer.addEventListener('touchend', (e) => {
+                    if (swipeStartX === null) return;
+                    const dx = e.changedTouches[0].clientX - swipeStartX;
+                    drawer.style.transition = '';
+                    drawer.style.transform  = '';
+                    if (dx > SWIPE_H_THRESHOLD) closeDrawer();
+                    swipeStartX = null;
+                }, { passive: true });
+
+                drawer.addEventListener('touchcancel', () => {
+                    swipeStartX = null;
+                    drawer.style.transition = '';
+                    drawer.style.transform  = '';
+                }, { passive: true });
+            })();
+
+            // ── Fisher-Yates shuffle — used by both host and guests ───────────────────
+            function fisherYates(arr) {
+                const a = [...arr];
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            // ── Shuffle manual queue (available to everyone) ──────────────────────────
+            document.getElementById('btn-shuffle-queue').addEventListener('click', () => {
+                if (manualQueue.length < 2) return;
+                const shuffled = fisherYates([...manualQueue]);
+                manualQueue = shuffled;
+                renderQueue();
+                socket.emit('queue-set-manual', { roomId, songs: shuffled });
+                const btn = document.getElementById('btn-shuffle-queue');
+                btn.classList.add('shuffle-active');
+                setTimeout(() => btn.classList.remove('shuffle-active'), 600);
+            });
 
             // ── Spotify SDK (host only) ───────────────────────────────────────────────
             <% if (isHost) { %>
@@ -1290,52 +1457,47 @@
                 const barFill = document.getElementById('player-bar-progress-fill');
                 if (barFill) barFill.style.width = `${pct}%`;
             }
-            // Also wire modal progress bar click to seek
-            document.getElementById('np-modal-progress-bar').addEventListener('click', (e) => {
-                if (!player || !currentDuration) return;
-                const rect   = e.currentTarget.getBoundingClientRect();
-                const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
-                player.seek(seekTo); currentPosition = seekTo; updateProgress();
-            });
-
-            // Modal controls mirror main controls
-            document.getElementById('np-modal-btn-play-pause').addEventListener('click', () => player?.togglePlay());
-            document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());
-            document.getElementById('np-modal-btn-next').addEventListener('click', () => document.getElementById('btn-next').click());
-
-            // Now Playing modal open/close
+            // ── Host-only: NP modal wiring ────────────────────────────────────────────
+            // Hoisted to this scope so the swipe handlers below (inside the EJS
+            // isHost block) can reference them without a ReferenceError.
             const npModal      = document.getElementById('np-modal');
             const npModalInner = document.getElementById('np-modal-inner');
             const npModalClose = document.getElementById('np-modal-close');
             const npTap        = document.getElementById('now-playing-tap');
 
             function openNpModal() {
+                if (!npModal) return;
                 npModal.classList.add('open');
                 npModal.setAttribute('aria-hidden', 'false');
             }
             function closeNpModal() {
+                if (!npModal) return;
                 npModal.classList.remove('open');
                 npModal.setAttribute('aria-hidden', 'true');
             }
 
-            npTap.addEventListener('click', openNpModal);
-            npModalClose.addEventListener('click', closeNpModal);
-
-            // Clicking anywhere on the player bar that isn't a button opens the modal
-            document.getElementById('player-bar').addEventListener('click', (e) => {
-                if (!e.target.closest('button')) openNpModal();
-            });
-
-            // ── Shuffle ───────────────────────────────────────────────────────────────
-            function fisherYates(arr) {
-                const a = [...arr];
-                for (let i = a.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [a[i], a[j]] = [a[j], a[i]];
-                }
-                return a;
+            if (isHost) {
+                document.getElementById('np-modal-progress-bar').addEventListener('click', (e) => {
+                    if (!player || !currentDuration) return;
+                    const rect   = e.currentTarget.getBoundingClientRect();
+                    const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
+                    player.seek(seekTo); currentPosition = seekTo; updateProgress();
+                });
+                document.getElementById('np-modal-btn-play-pause').addEventListener('click', () => player?.togglePlay());
+                document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());
+                document.getElementById('np-modal-btn-next').addEventListener('click', () => document.getElementById('btn-next').click());
+                document.getElementById('np-modal-btn-queue').addEventListener('click', () => {
+                    closeNpModal();
+                    openDrawer();
+                });
+                npTap.addEventListener('click', openNpModal);
+                npModalClose.addEventListener('click', closeNpModal);
+                document.getElementById('player-bar').addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) openNpModal();
+                });
             }
 
+            // ── Shuffle ───────────────────────────────────────────────────────────────
             function updateShuffleUI() {
                 const btns = [
                     document.getElementById('btn-shuffle-library'),
@@ -1369,11 +1531,6 @@
 
             document.getElementById('btn-shuffle-library')?.addEventListener('click', toggleShuffle);
             document.getElementById('np-modal-btn-shuffle')?.addEventListener('click', toggleShuffle);
-
-            // Clicking anywhere on the player bar that isn't a button opens the modal
-            document.getElementById('player-bar').addEventListener('click', (e) => {
-                if (!e.target.closest('button')) openNpModal();
-            });
 
             // Swipe-down to dismiss — only from above the progress bar
             let swipeStartY = null;
@@ -1415,7 +1572,108 @@
                 if (song.image) { art.src = song.image; art.style.opacity = '1'; }
                 if (name)   { name.textContent   = song.name;   name.style.color = ''; }
                 if (artist) artist.textContent = song.artist || '';
+
+                // Sync guest modal
+                const mArt = document.getElementById('guest-np-modal-art');
+                if (mArt) { mArt.src = song.image || ''; mArt.style.opacity = song.image ? '1' : '0'; }
+                const mName = document.getElementById('guest-np-modal-name');
+                if (mName) mName.textContent = song.name || '';
+                const mArtist = document.getElementById('guest-np-modal-artist');
+                if (mArtist) mArtist.textContent = song.artist || '';
+
+                // Reset guest progress bar — caller sets guestCurrentDuration/Position after this
+                guestCurrentPosition = song.progress_ms || 0;
+                guestCurrentDuration = song.duration_ms || 0;
+                updateGuestProgress();
             }
+
+            // ── Guest progress ticker ─────────────────────────────────────────────────
+            // Guests don't have SDK access so we fake progress by counting up from 0.
+            // It resets whenever a new now-playing event arrives.
+            let guestCurrentPosition = 0;
+            let guestCurrentDuration = 0;
+            let guestProgressInterval = null;
+
+            function updateGuestProgress() {
+                const pct = guestCurrentDuration > 0
+                    ? Math.min((guestCurrentPosition / guestCurrentDuration) * 100, 100)
+                    : 0;
+
+                const barFill = document.getElementById('guest-bar-progress-fill');
+                if (barFill) barFill.style.width = `${pct}%`;
+
+                const mFill = document.getElementById('guest-np-modal-progress-fill');
+                if (mFill) mFill.style.width = `${pct}%`;
+
+                const mCur = document.getElementById('guest-np-modal-time-current');
+                if (mCur) mCur.textContent = msToTime(guestCurrentPosition);
+                const mTot = document.getElementById('guest-np-modal-time-total');
+                if (mTot) mTot.textContent = guestCurrentDuration > 0 ? msToTime(guestCurrentDuration) : '—';
+            }
+
+            // Start ticking once music is playing
+            function startGuestProgressTicker() {
+                clearInterval(guestProgressInterval);
+                guestProgressInterval = setInterval(() => {
+                    guestCurrentPosition += 500;
+                    if (guestCurrentDuration > 0 && guestCurrentPosition > guestCurrentDuration) {
+                        guestCurrentPosition = guestCurrentDuration;
+                    }
+                    updateGuestProgress();
+                }, 500);
+            }
+
+            // ── Guest modal open/close ────────────────────────────────────────────────
+            // These elements only exist in the guest DOM — guard against null crash on host
+            if (!isHost) {
+            const guestNpModal      = document.getElementById('guest-np-modal');
+            const guestNpModalInner = document.getElementById('guest-np-modal-inner');
+            const guestNpModalClose = document.getElementById('guest-np-modal-close');
+
+            function openGuestNpModal()  { guestNpModal.classList.add('open'); guestNpModal.setAttribute('aria-hidden', 'false'); }
+            function closeGuestNpModal() { guestNpModal.classList.remove('open'); guestNpModal.setAttribute('aria-hidden', 'true'); }
+
+            guestNpModalClose.addEventListener('click', closeGuestNpModal);
+
+            // Clicking guest bar anywhere except the three buttons opens modal
+            document.getElementById('guest-bar').addEventListener('click', (e) => {
+                if (!e.target.closest('button')) openGuestNpModal();
+            });
+
+            // Modal prev/next/queue wire-up
+            document.getElementById('guest-np-modal-btn-prev').addEventListener('click', () => {
+                document.getElementById('btn-guest-prev').click();
+            });
+            document.getElementById('guest-np-modal-btn-next').addEventListener('click', () => {
+                document.getElementById('btn-guest-skip').click();
+            });
+            document.getElementById('guest-np-modal-btn-queue').addEventListener('click', () => {
+                closeGuestNpModal();
+                openDrawer();
+            });
+
+            // Swipe-down to dismiss guest modal
+            let guestSwipeStartY = null;
+            guestNpModalInner.addEventListener('touchstart', (e) => {
+                const pb = document.getElementById('guest-np-modal-progress-bar');
+                const pbRect = pb.getBoundingClientRect();
+                const touch = e.touches[0];
+                guestSwipeStartY = touch.clientY < pbRect.top ? touch.clientY : null;
+            }, { passive: true });
+            guestNpModalInner.addEventListener('touchmove', (e) => {
+                if (guestSwipeStartY === null) return;
+                const dy = e.touches[0].clientY - guestSwipeStartY;
+                if (dy > 0) { guestNpModalInner.style.transform = `translateY(${dy}px)`; guestNpModalInner.style.transition = 'none'; }
+            }, { passive: true });
+            guestNpModalInner.addEventListener('touchend', (e) => {
+                if (guestSwipeStartY === null) return;
+                const dy = e.changedTouches[0].clientY - guestSwipeStartY;
+                guestNpModalInner.style.transform = '';
+                guestNpModalInner.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
+                if (dy > 60) closeGuestNpModal();
+                guestSwipeStartY = null;
+            }, { passive: true });
+            } // end if (!isHost)
 
             // ── Play a track ──────────────────────────────────────────────────────────
             let hasPlayedOnce = false; // tracks whether the SDK has played anything yet
@@ -1524,6 +1782,49 @@
                 }
             });
             backdrop.addEventListener('click', closeSidebar);
+
+            // ── Swipe left to close library sidebar (mobile) ──────────────────────────
+            (function initSidebarSwipe() {
+                let swipeStartX = null;
+                let swipeStartY = null;
+                const SWIPE_H_THRESHOLD = 72;
+                const SWIPE_V_LOCK      = 12;
+
+                sidebar.addEventListener('touchstart', (e) => {
+                    const btn = e.target.closest('button');
+                    if (btn) { swipeStartX = null; return; }
+                    const t = e.touches[0];
+                    swipeStartX = t.clientX;
+                    swipeStartY = t.clientY;
+                    sidebar.style.transition = 'none';
+                }, { passive: true });
+
+                sidebar.addEventListener('touchmove', (e) => {
+                    if (swipeStartX === null) return;
+                    const t  = e.touches[0];
+                    const dx = t.clientX - swipeStartX;
+                    const dy = Math.abs(t.clientY - swipeStartY);
+                    if (dy > SWIPE_V_LOCK && Math.abs(dx) < dy) { swipeStartX = null; sidebar.style.transform = ''; return; }
+                    if (dx < 0) {
+                        sidebar.style.transform = `translateX(${dx}px)`;
+                    }
+                }, { passive: true });
+
+                sidebar.addEventListener('touchend', (e) => {
+                    if (swipeStartX === null) return;
+                    const dx = e.changedTouches[0].clientX - swipeStartX;
+                    sidebar.style.transition = '';
+                    sidebar.style.transform  = '';
+                    if (dx < -SWIPE_H_THRESHOLD) closeSidebar();
+                    swipeStartX = null;
+                }, { passive: true });
+
+                sidebar.addEventListener('touchcancel', () => {
+                    swipeStartX = null;
+                    sidebar.style.transition = '';
+                    sidebar.style.transform  = '';
+                }, { passive: true });
+            })();
 
             // Switch source
             async function switchSource(sourceId, sourceName) {
@@ -1938,6 +2239,10 @@
                             });
                             showToast(`"${data.match || song.name}" added to queue`);
                             btn.textContent = '✓ queued';
+                            setTimeout(() => {
+                                btn.textContent = '+ queue';
+                                btn.disabled = false;
+                            }, 1500);
                         } catch (err) {
                             showToast('Failed to search Spotify');
                             btn.disabled = false;
@@ -2000,6 +2305,49 @@
                     guestSidebar.classList.contains('open') ? closeGuestSidebar() : openGuestSidebar();
                 });
                 guestBackdrop.addEventListener('click', closeGuestSidebar);
+
+                // ── Swipe left to close guest library sidebar (mobile) ────────────────
+                (function initGuestSidebarSwipe() {
+                    let swipeStartX = null;
+                    let swipeStartY = null;
+                    const SWIPE_H_THRESHOLD = 72;
+                    const SWIPE_V_LOCK      = 12;
+
+                    guestSidebar.addEventListener('touchstart', (e) => {
+                        const btn = e.target.closest('button');
+                        if (btn) { swipeStartX = null; return; }
+                        const t = e.touches[0];
+                        swipeStartX = t.clientX;
+                        swipeStartY = t.clientY;
+                        guestSidebar.style.transition = 'none';
+                    }, { passive: true });
+
+                    guestSidebar.addEventListener('touchmove', (e) => {
+                        if (swipeStartX === null) return;
+                        const t  = e.touches[0];
+                        const dx = t.clientX - swipeStartX;
+                        const dy = Math.abs(t.clientY - swipeStartY);
+                        if (dy > SWIPE_V_LOCK && Math.abs(dx) < dy) { swipeStartX = null; guestSidebar.style.transform = ''; return; }
+                        if (dx < 0) {
+                            guestSidebar.style.transform = `translateX(${dx}px)`;
+                        }
+                    }, { passive: true });
+
+                    guestSidebar.addEventListener('touchend', (e) => {
+                        if (swipeStartX === null) return;
+                        const dx = e.changedTouches[0].clientX - swipeStartX;
+                        guestSidebar.style.transition = '';
+                        guestSidebar.style.transform  = '';
+                        if (dx < -SWIPE_H_THRESHOLD) closeGuestSidebar();
+                        swipeStartX = null;
+                    }, { passive: true });
+
+                    guestSidebar.addEventListener('touchcancel', () => {
+                        swipeStartX = null;
+                        guestSidebar.style.transition = '';
+                        guestSidebar.style.transform  = '';
+                    }, { passive: true });
+                })();
             }
 
             // Init
@@ -2092,7 +2440,8 @@
                 }
             }
 
-            // Initial render
+            // Initial render — controller pre-loads 50 songs server-side,
+            // so render them immediately; likedOffset is already set to allSongs.length (50).
             <% if (user) { %>
             renderSongs(currentSongs);
             <% } %>
@@ -2220,6 +2569,39 @@
             (function initDrag() {
                 const body = document.getElementById('drawer-body');
 
+                // ── Auto-scroll while dragging ────────────────────────────────
+                // When the pointer/finger is within SCROLL_ZONE px of the top or
+                // bottom edge of the drawer body, we scroll it continuously.
+                const SCROLL_ZONE  = 60;  // px from edge that triggers scrolling
+                const SCROLL_SPEED = 12;  // px per animation frame
+
+                let scrollRaf = null;
+                let scrollDir = 0; // -1 = up, 0 = none, +1 = down
+
+                function startAutoScroll(direction) {
+                    if (scrollDir === direction) return; // already scrolling this way
+                    scrollDir = direction;
+                    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+                    if (direction === 0) { scrollRaf = null; return; }
+                    function tick() {
+                        body.scrollTop += scrollDir * SCROLL_SPEED;
+                        scrollRaf = requestAnimationFrame(tick);
+                    }
+                    scrollRaf = requestAnimationFrame(tick);
+                }
+
+                function stopAutoScroll() {
+                    scrollDir = 0;
+                    if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
+                }
+
+                function getScrollDir(clientY) {
+                    const rect = body.getBoundingClientRect();
+                    if (clientY < rect.top + SCROLL_ZONE)    return -1;
+                    if (clientY > rect.bottom - SCROLL_ZONE) return  1;
+                    return 0;
+                }
+
                 // ── Mouse drag (desktop) ──────────────────────────────────────
                 body.addEventListener('dragstart', (e) => {
                     const item = e.target.closest('.queue-item');
@@ -2231,6 +2613,7 @@
                 });
 
                 body.addEventListener('dragend', () => {
+                    stopAutoScroll();
                     document.querySelectorAll('.queue-item.dragging').forEach(el => el.classList.remove('dragging'));
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
                     dragSrc = null; dragOverItem = null; isDragging = false;
@@ -2238,6 +2621,7 @@
 
                 body.addEventListener('dragover', (e) => {
                     e.preventDefault();
+                    startAutoScroll(getScrollDir(e.clientY));
                     const item = e.target.closest('.queue-item');
                     if (!item || item === dragSrc) return;
                     if (item !== dragOverItem) {
@@ -2256,6 +2640,7 @@
 
                 body.addEventListener('drop', (e) => {
                     e.preventDefault();
+                    stopAutoScroll();
                     const target = e.target.closest('.queue-item');
                     isDragging = false;
                     commitDrop(dragSrc, target);
@@ -2271,8 +2656,8 @@
                 let touchOffsetX = 0, touchOffsetY = 0;
 
                 body.addEventListener('touchstart', (e) => {
-                    const handle = e.target.closest('.drag-handle');
-                    const item   = handle ? handle.closest('.queue-item') : null;
+                    const dragZone = e.target.closest('.drag-handle, .q-art, .q-art-placeholder, .q-info');
+                    const item     = dragZone ? dragZone.closest('.queue-item') : null;
                     if (!item) return;
 
                     touchSrc = item;
@@ -2310,6 +2695,9 @@
                     touchClone.style.left = `${touch.clientX - touchOffsetX}px`;
                     touchClone.style.top  = `${touch.clientY - touchOffsetY}px`;
 
+                    // Auto-scroll the drawer when finger is near the top/bottom edge
+                    startAutoScroll(getScrollDir(touch.clientY));
+
                     // Highlight the item currently under the finger
                     touchClone.style.display = 'none';
                     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -2330,6 +2718,7 @@
 
                 body.addEventListener('touchend', (e) => {
                     if (!touchSrc) return;
+                    stopAutoScroll();
 
                     // Clean up clone and highlight
                     touchClone?.remove(); touchClone = null;
@@ -2346,6 +2735,7 @@
                 }, { passive: true });
 
                 body.addEventListener('touchcancel', () => {
+                    stopAutoScroll();
                     touchClone?.remove(); touchClone = null;
                     touchSrc?.classList.remove('dragging');
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));

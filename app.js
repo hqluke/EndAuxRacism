@@ -209,6 +209,11 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    socket.on("queue-set-manual", ({ roomId, songs }) => {
+        roomManager.setManualQueue(roomId, songs);
+        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+    });
+
     // queue-advance is now only called from the client for manual skips (next button,
     // guest skip request). Server-side polling handles near-end advancement automatically.
     socket.on("queue-advance", ({ roomId }) => {
