@@ -815,6 +815,26 @@ body.drawer-open #guest-panel {
     z-index: 100;
     position: relative;
 }
+
+/* ── Player bar top progress strip ── */
+#player-bar-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--surface2);
+    pointer-events: none;
+    z-index: 1;
+}
+#player-bar-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    border-radius: 0 1px 1px 0;
+    transition: width 0.5s linear;
+    pointer-events: none;
+}
 body.drawer-open #player-bar {
     margin-right: 0;
 }
@@ -857,9 +877,9 @@ body.drawer-open #player-bar {
 .player-controls {
     flex: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;
 }
 .control-btns {
     display: flex;
@@ -872,12 +892,13 @@ body.drawer-open #player-bar {
     border: none;
     color: var(--muted2);
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     transition:
         color 0.15s,
         transform 0.1s;
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 .ctrl-btn:hover {
     color: var(--text);
@@ -888,17 +909,20 @@ body.drawer-open #player-bar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--text);
-    color: #1a0020;
+    background: #25282a;
+    color: #dddad6;
+    border: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     transition:
         background 0.15s,
         transform 0.1s;
 }
 #btn-play-pause:hover {
-    background: var(--green);
+    background: #313538;
     transform: scale(1.08);
 }
 
@@ -976,6 +1000,18 @@ body.drawer-open #player-bar {
     color: #e74c3c;
 }
 
+#sdk-status-bar {
+    font-size: 0.65rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+#sdk-status-bar.ready {
+    color: var(--green);
+}
+#sdk-status-bar.error {
+    color: #e74c3c;
+}
+
 /* Queue toggle button */
 #btn-queue-toggle {
     background: none;
@@ -1013,6 +1049,7 @@ body.drawer-open #player-bar {
     font-size: 0.65rem;
     color: var(--muted);
     white-space: nowrap;
+    align-self: center;
 }
 
 /* ── Guest Bar ── */
@@ -1423,13 +1460,13 @@ body.drawer-open #player-bar {
     .btn-queue {
         padding: 0 9px;
         font-size: 0.6rem;
-    height: 52px;
-    width: 62px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: "DM Mono", monospace;
-    font-size: 0.72rem;
+        height: 52px;
+        width: 62px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: "DM Mono", monospace;
+        font-size: 0.72rem;
     }
 
     /* Player/guest bar */
@@ -1440,8 +1477,8 @@ body.drawer-open #player-bar {
         height: 72px;
     }
     .now-playing {
-        width: auto;
-        flex: 1;
+        width: 180px;
+        flex-shrink: 0;
         min-width: 0;
     }
     #np-art,
@@ -1454,7 +1491,12 @@ body.drawer-open #player-bar {
         font-size: 0.78rem;
     }
     .player-controls {
-        flex: 1;
+        flex: 0 0 auto; /* size to content only */
+        justify-content: center;
+        margin: 0 auto; /* center between now-playing and right side */
+    }
+    .player-bar-right {
+        flex-shrink: 0;
     }
     .progress-wrap {
         max-width: none;
@@ -1609,8 +1651,8 @@ body.drawer-open #player-bar {
     /* Player / guest bar */
     #player-bar,
     #guest-bar {
-        padding: 0 10px;
-        gap: 8px;
+        padding: 0 8px;
+        gap: 4px;
         height: var(--player-h);
     }
     #np-art,
@@ -1635,10 +1677,6 @@ body.drawer-open #player-bar {
     .ctrl-btn svg {
         width: 14px;
         height: 14px;
-    }
-    #btn-play-pause {
-        width: 32px;
-        height: 32px;
     }
     .time-label {
         font-size: 0.58rem;
@@ -1760,10 +1798,6 @@ body.drawer-open #player-bar {
         padding: 4px 6px;
         font-size: 0.6rem;
     }
-    #btn-play-pause {
-        width: 28px;
-        height: 28px;
-    }
     .control-btns {
         gap: 10px;
     }
@@ -1865,10 +1899,6 @@ body.drawer-open #player-bar {
         padding: 3px 5px;
         font-size: 0.58rem;
     }
-    #btn-play-pause {
-        width: 26px;
-        height: 26px;
-    }
     .control-btns {
         gap: 8px;
     }
@@ -1957,70 +1987,479 @@ body.drawer-open #player-bar {
 
 /* ── Spotify Connect Modal ───────────────────────── */
 #connect-modal-overlay {
-    position: fixed; inset: 0; z-index: 400;
-    background: rgba(0,0,0,0.6);
-    display: flex; align-items: center; justify-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 #connect-modal {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 12px; width: min(420px, 90vw);
-    padding: 24px; display: flex; flex-direction: column; gap: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: min(420px, 90vw);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 .connect-modal-header {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 .connect-modal-title {
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
 }
 .connect-modal-header button {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; padding: 4px; display: flex;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
 }
-.connect-modal-hint { font-size: 0.75rem; color: var(--muted); margin: 0; }
-.connect-loading, .connect-empty {
-    font-size: 0.78rem; color: var(--muted); text-align: center; padding: 24px 0;
+.connect-modal-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin: 0;
 }
-#connect-device-list { display: flex; flex-direction: column; gap: 6px; }
+.connect-loading,
+.connect-empty {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 24px 0;
+}
+#connect-device-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 .connect-device-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 12px; border-radius: 8px;
-    border: 1px solid var(--border); transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: background 0.15s;
 }
-.connect-device-item.active { border-color: var(--green); }
-.connect-device-icon { color: var(--muted2); flex-shrink: 0; }
-.connect-device-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.connect-device-item.active {
+    border-color: var(--green);
+}
+.connect-device-icon {
+    color: var(--muted2);
+    flex-shrink: 0;
+}
+.connect-device-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
 .connect-device-name {
-    font-size: 0.82rem; font-weight: 600; color: var(--fg);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--fg);
 }
-.connect-device-name em { font-style: normal; color: var(--muted); font-weight: 400; }
-.connect-device-type { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+.connect-device-name em {
+    font-style: normal;
+    color: var(--muted);
+    font-weight: 400;
+}
+.connect-device-type {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 1px;
+}
 .connect-device-badge {
-    font-size: 0.65rem; color: var(--green); font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--green);
+    font-family: "DM Mono", monospace;
     white-space: nowrap;
 }
 .btn-connect-select {
-    background: var(--surface3, #2a2a2a); border: 1px solid var(--border);
-    color: var(--fg); font-size: 0.72rem; padding: 5px 12px;
-    border-radius: 6px; cursor: pointer; white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    background: var(--surface3, #2a2a2a);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-size: 0.72rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
 }
-.btn-connect-select:hover { background: var(--green); color: #000; border-color: var(--green); }
+.btn-connect-select:hover {
+    background: var(--green);
+    color: #000;
+    border-color: var(--green);
+}
 .connect-modal-footer {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding-top: 4px;
 }
 #connect-polling-status {
-    font-size: 0.65rem; color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: "DM Mono", monospace;
 }
 .btn-connect-refresh {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    font-size: 0.7rem; padding: 5px 10px; border-radius: 6px;
-    cursor: pointer; display: flex; align-items: center; gap: 5px;
-    transition: color 0.15s, border-color 0.15s;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
 }
-.btn-connect-refresh:hover { color: var(--fg); border-color: var(--fg); }
+.btn-connect-refresh:hover {
+    color: var(--fg);
+    border-color: var(--fg);
+}
 #connect-modal-error {
-    font-size: 0.75rem; color: #e74c3c;
-    background: rgba(231,76,60,0.1); border-radius: 6px; padding: 8px 12px;
+    font-size: 0.75rem;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NEW MOBILE UI — Player bar rework, modal, shuffle btn, connect header
+══════════════════════════════════════════════════════════════ */
+
+/* ── Connect button in header (between library toggle and user-pill) ── */
+.btn-connect-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted2);
+    cursor: pointer;
+    padding: 6px 10px;
+    font-family: "DM Mono", monospace;
+    font-size: 0.7rem;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.btn-connect-header:hover {
+    color: var(--text);
+    border-color: var(--muted2);
+}
+.btn-connect-header svg {
+    color: var(--green);
+}
+
+/* ── Shuffle button in header-title-group ── */
+.btn-shuffle-library {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 10px;
+    font-family: "DM Mono", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    align-self: center;
+}
+.btn-shuffle-library:hover {
+    color: var(--green);
+    border-color: var(--green);
+}
+.btn-shuffle-library.shuffle-active {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(255, 188, 255, 0.1);
+}
+
+/* Shuffle active state for the modal shuffle button */
+.np-modal-ctrl-btn.shuffle-active {
+    color: var(--green) !important;
+    background: rgba(255, 188, 255, 0.1);
+}
+
+/* now-playing in player bar — make it look tappable */
+#now-playing-tap {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    padding: 6px 8px;
+    margin: -6px -8px;
+}
+#now-playing-tap:hover {
+    background: var(--surface2);
+}
+#now-playing-tap:active {
+    background: var(--surface3);
+}
+
+/* ── Now Playing Full-Screen Modal ── */
+.np-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(8, 8, 8, 0.97);
+    backdrop-filter: blur(24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.np-modal.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.np-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--muted2);
+    cursor: pointer;
+    padding: 8px;
+    z-index: 10;
+    border-radius: 50%;
+    transition:
+        color 0.15s,
+        background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.np-modal-close:hover {
+    color: var(--text);
+    background: var(--surface2);
+}
+
+.np-modal-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    max-height: 800px;
+    padding: 100px 32px 80px;
+    gap: 20px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Push progress + controls away from info with a fixed designed gap */
+.np-modal-progress {
+    margin-top: 48px;
+    width: 100%;
+}
+
+.np-modal-art {
+    width: min(260px, 70vw);
+    height: min(260px, 70vw);
+    border-radius: 12px;
+    margin-top: 8rem;
+    object-fit: cover;
+    background: var(--surface2);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    flex-shrink: 0;
+}
+
+.np-modal-info {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 16px; /* extra gap before progress bar */
+}
+.np-modal-name {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.np-modal-artist {
+    font-size: 0.85rem;
+    color: var(--muted2);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal progress bar — big, easy to press */
+.np-modal-progress {
+    width: 100%;
+}
+.np-modal-progress .progress-wrap {
+    max-width: 100%;
+    gap: 12px;
+}
+.np-modal-progress-bar {
+    flex: 1;
+    height: 24px; /* full touch-target height */
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center; /* vertically center the track line */
+}
+/* The visual grey track — centered inside the touch target */
+.np-modal-progress-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface2);
+}
+.np-modal-progress-fill {
+    height: 6px;
+    background: var(--green);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.5s linear;
+    pointer-events: none;
+    position: absolute; /* sit inside the bar, vertically centered */
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    z-index: 1; /* sit above the ::before grey track */
+}
+.np-modal-progress .time-label {
+    font-size: 0.72rem;
+    width: 36px;
+}
+
+/* Modal control buttons */
+.np-modal-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin-top: 8px;
+}
+.np-modal-ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--muted2);
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 50%;
+    transition:
+        color 0.15s,
+        background 0.15s,
+        transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.np-modal-ctrl-btn svg {
+    width: 26px;
+    height: 26px;
+}
+.np-modal-ctrl-btn:hover {
+    color: var(--text);
+    background: var(--surface2);
+    transform: scale(1.08);
+}
+.np-modal-ctrl-btn--placeholder {
+    opacity: 0.4;
+    cursor: default;
+}
+.np-modal-ctrl-btn--placeholder:hover {
+    transform: none;
+    background: none;
+    color: var(--muted2);
+}
+
+.np-modal-play-pause {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--text);
+    color: #1a0020; /* dark text always — not inherited from .ctrl-btn */
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background 0.15s,
+        transform 0.1s;
+    flex-shrink: 0;
+}
+.np-modal-play-pause svg {
+    fill: #1a0020; /* force SVG fill — currentColor would inherit but this is explicit */
+}
+.np-modal-play-pause:hover {
+    background: var(--green);
+    color: #1a0020; /* keep dark on hover too */
+    transform: scale(1.06);
+}
+
+/* ── Responsive overrides for player bar layout ── */
+@media (max-width: 480px) {
+    .btn-connect-header {
+        padding: 5px 7px;
+        font-size: 0.62rem;
+    }
+    .btn-connect-header span {
+        display: none;
+    }
+
+    .btn-shuffle-library span {
+        display: none;
+    }
+
+    /* Modal inner padding adjustment for small screens */
+    .np-modal-inner {
+        padding: 80px 20px 60px;
+        max-height: 100%;
+        gap: 16px;
+    }
+    .np-modal-progress {
+        margin-top: 32px;
+    }
+    .np-modal-name {
+        font-size: 1.2rem;
+    }
+    .np-modal-controls {
+        gap: 14px;
+    }
+    .np-modal-play-pause {
+        width: 52px;
+        height: 52px;
+    }
 }

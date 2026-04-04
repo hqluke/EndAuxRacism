@@ -59,6 +59,26 @@
                     </svg>
                     Library
                 </button>
+                <% if (isHost) { %>
+                <button
+                    id="btn-spotify-connect-header"
+                    class="btn-connect-header"
+                    title="Choose playback device"
+                    style="display: none"
+                >
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 168 168"
+                        fill="currentColor"
+                    >
+                        <path
+                            d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.6 121.2c-1.6 2.6-5 3.4-7.6 1.8-20.8-12.7-47-15.6-77.8-8.6-3 .7-6-1.2-6.6-4.2-.7-3 1.2-6 4.2-6.6 33.7-7.7 62.6-4.4 86 9.9 2.5 1.6 3.3 5 1.8 7.7zm10.3-22.9c-2 3.2-6.2 4.2-9.4 2.2-23.8-14.6-60-18.9-88.1-10.3-3.6 1.1-7.4-1-8.5-4.6-1.1-3.6 1-7.4 4.6-8.5 32.1-9.8 71.9-5 99.2 11.8 3.1 1.9 4.1 6.2 2.2 9.4zm.9-23.8C108.4 57.5 58.3 55.8 29 64.5c-4.4 1.3-9-.9-10.3-5.3-1.3-4.4.9-9 5.3-10.3C57.8 39.2 112.2 41.2 141 60c4 2.4 5.2 7.6 2.8 11.5z"
+                        />
+                    </svg>
+                    Connect
+                </button>
+                <% } %>
                 <div class="user-pill">
                     <% if (user.avatar) { %>
                     <img
@@ -165,6 +185,28 @@
                     <div class="header-title-group">
                         <h1 id="source-title">Liked Songs</h1>
                         <span class="count" id="count-label">50 SONGS</span>
+                        <button
+                            class="btn-shuffle-library"
+                            id="btn-shuffle-library"
+                            title="Shuffle (coming soon)"
+                        >
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <polyline points="16 3 21 3 21 8" />
+                                <line x1="4" y1="20" x2="21" y2="3" />
+                                <polyline points="21 16 21 21 16 21" />
+                                <line x1="15" y1="15" x2="21" y2="21" />
+                            </svg>
+                            Shuffle
+                        </button>
                     </div>
                 </div>
                 <div class="search-row">
@@ -450,7 +492,10 @@
         <!-- ── Player Bar (host) ── -->
         <% if (isHost) { %>
         <div id="player-bar">
-            <div class="now-playing">
+            <div id="player-bar-progress">
+                <div id="player-bar-progress-fill"></div>
+            </div>
+            <div class="now-playing" id="now-playing-tap" title="Expand player">
                 <img id="np-art" src="" alt="" style="opacity: 0" />
                 <div class="np-text">
                     <div id="np-name" style="color: var(--muted)">
@@ -460,100 +505,62 @@
                 </div>
             </div>
             <div class="player-controls">
-                <div class="control-btns">
-                    <button class="ctrl-btn" id="btn-prev">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                        >
-                            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
-                        </svg>
-                    </button>
-                    <button class="ctrl-btn" id="btn-play-pause">
-                        <svg
-                            id="icon-play"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                        >
-                            <path d="M8 5v14l11-7z" />
-                        </svg>
-                        <svg
-                            id="icon-pause"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            style="display: none"
-                        >
-                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                        </svg>
-                    </button>
-                    <button class="ctrl-btn" id="btn-next">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                        >
-                            <path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="progress-wrap">
-                    <span class="time-label" id="time-current">0:00</span>
-                    <div id="progress-bar"><div id="progress-fill"></div></div>
-                    <span class="time-label right" id="time-total">0:00</span>
-                </div>
-            </div>
-            <div class="volume-wrap">
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                >
-                    <path
-                        d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
-                    />
-                </svg>
-                <input
-                    type="range"
-                    id="volume-slider"
-                    min="0"
-                    max="100"
-                    value="80"
-                />
-            </div>
-            <div class="player-bar-right">
-                <span
-                    id="sdk-status-bar"
-                    style="
-                        font-size: 0.65rem;
-                        color: var(--muted);
-                        white-space: nowrap;
-                    "
-                ></span>
                 <button
-                    id="btn-spotify-connect"
-                    title="Choose playback device"
-                    style="display: none"
+                    class="ctrl-btn"
+                    id="btn-prev"
+                    title="Previous"
                 >
                     <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 168 168"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
                         fill="currentColor"
                     >
-                        <path
-                            d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.6 121.2c-1.6 2.6-5 3.4-7.6 1.8-20.8-12.7-47-15.6-77.8-8.6-3 .7-6-1.2-6.6-4.2-.7-3 1.2-6 4.2-6.6 33.7-7.7 62.6-4.4 86 9.9 2.5 1.6 3.3 5 1.8 7.7zm10.3-22.9c-2 3.2-6.2 4.2-9.4 2.2-23.8-14.6-60-18.9-88.1-10.3-3.6 1.1-7.4-1-8.5-4.6-1.1-3.6 1-7.4 4.6-8.5 32.1-9.8 71.9-5 99.2 11.8 3.1 1.9 4.1 6.2 2.2 9.4zm.9-23.8C108.4 57.5 58.3 55.8 29 64.5c-4.4 1.3-9-.9-10.3-5.3-1.3-4.4.9-9 5.3-10.3C57.8 39.2 112.2 41.2 141 60c4 2.4 5.2 7.6 2.8 11.5z"
-                        />
+                        <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
                     </svg>
-                    Connect
                 </button>
+                <button
+                    class="ctrl-btn"
+                    id="btn-play-pause"
+                    title="Play / Pause"
+                >
+                    <svg
+                        id="icon-play"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <svg
+                        id="icon-pause"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        style="display: none"
+                    >
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                </button>
+                <button
+                    class="ctrl-btn"
+                    id="btn-next"
+                    title="Next"
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                    </svg>
+                </button>
+            </div>
+            <div class="player-bar-right">
+                <span id="sdk-status-bar"></span>
                 <button id="btn-queue-toggle">
                     <svg
                         width="15"
@@ -569,6 +576,144 @@
                 </button>
             </div>
         </div>
+
+        <!-- ── Now Playing Full-Screen Modal ── -->
+        <div id="np-modal" class="np-modal" aria-hidden="true">
+            <button id="np-modal-close" class="np-modal-close" title="Close">
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="np-modal-inner" id="np-modal-inner">
+                <img id="np-modal-art" src="" alt="" class="np-modal-art" />
+                <div class="np-modal-info">
+                    <div id="np-modal-name" class="np-modal-name">
+                        Not playing
+                    </div>
+                    <div id="np-modal-artist" class="np-modal-artist"></div>
+                </div>
+                <div class="np-modal-progress">
+                    <div class="progress-wrap">
+                        <span class="time-label" id="np-modal-time-current"
+                            >0:00</span
+                        >
+                        <div
+                            id="np-modal-progress-bar"
+                            class="np-modal-progress-bar"
+                        >
+                            <div
+                                id="np-modal-progress-fill"
+                                class="np-modal-progress-fill"
+                            ></div>
+                        </div>
+                        <span class="time-label right" id="np-modal-time-total"
+                            >0:00</span
+                        >
+                    </div>
+                </div>
+                <div class="np-modal-controls">
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="np-modal-btn-shuffle"
+                        title="Shuffle (coming soon)"
+                    >
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="16 3 21 3 21 8" />
+                            <line x1="4" y1="20" x2="21" y2="3" />
+                            <polyline points="21 16 21 21 16 21" />
+                            <line x1="15" y1="15" x2="21" y2="21" />
+                        </svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="np-modal-btn-prev"
+                        title="Previous"
+                    >
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                        </svg>
+                    </button>
+                    <button
+                        class="np-modal-play-pause"
+                        id="np-modal-btn-play-pause"
+                        title="Play / Pause"
+                    >
+                        <svg
+                            id="np-modal-icon-play"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                        <svg
+                            id="np-modal-icon-pause"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            style="display: none"
+                        >
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn"
+                        id="np-modal-btn-next"
+                        title="Next"
+                    >
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                        </svg>
+                    </button>
+                    <button
+                        class="ctrl-btn np-modal-ctrl-btn np-modal-ctrl-btn--placeholder"
+                        title="More (coming soon)"
+                    >
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="19" cy="12" r="1" />
+                            <circle cx="5" cy="12" r="1" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <% } else { %>
         <!-- ── Guest Bar ── -->
         <div id="guest-bar">
@@ -646,6 +791,7 @@
             // NOTE: Near-end queue advancement is handled server-side by playbackManager.
             // The client only handles manual skips (next/prev buttons, guest skip).
             let historyStack     = []; // up to 10 previously played songs
+            let shuffleEnabled   = false; // shuffle mode toggle
 
             // Library state
             let currentSource    = 'liked';
@@ -816,9 +962,12 @@
                     activeDeviceId = device_id;
                     sdkIsActiveDevice = true;
                     stopPolling();
-                    setStatus('ready', '● Player ready');
-                    // Reveal the Connect button now that we know devices exist
-                    document.getElementById('btn-spotify-connect').style.display = '';
+                    setStatus('ready', '● Ready');
+                    // Reveal the Connect button in both the player bar (legacy hidden) and header
+                    const connectBtnLegacy = document.getElementById('btn-spotify-connect');
+                    if (connectBtnLegacy) connectBtnLegacy.style.display = '';
+                    const connectBtnH = document.getElementById('btn-spotify-connect-header');
+                    if (connectBtnH) connectBtnH.style.display = '';
                 });
 
                 player.addListener('not_ready', () => {
@@ -866,13 +1015,8 @@
                 lastAdvancedUri = currentTrackUri;
                 socket.emit('queue-advance', { roomId });
             });
-            document.getElementById('volume-slider').addEventListener('input', (e) => player?.setVolume(e.target.value / 100));
-            document.getElementById('progress-bar').addEventListener('click', (e) => {
-                if (!player || !currentDuration) return;
-                const rect   = e.currentTarget.getBoundingClientRect();
-                const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
-                player.seek(seekTo); currentPosition = seekTo; updateProgress();
-            });
+            // volume-slider removed from player bar in mobile redesign
+            // progress-bar removed from player bar in mobile redesign (now lives in the np-modal)
 
             // ── Spotify Connect: device picker + polling fallback ─────────────────────
             //
@@ -982,7 +1126,10 @@
                 connectOverlay.style.display = 'none';
             }
 
-            connectBtn.addEventListener('click', openConnectModal);
+            connectBtn?.addEventListener('click', openConnectModal);
+            // Also wire the header Connect button (same functionality)
+            const connectBtnHeader = document.getElementById('btn-spotify-connect-header');
+            if (connectBtnHeader) connectBtnHeader.addEventListener('click', openConnectModal);
             closeConnectBtn.addEventListener('click', closeConnectModal);
             connectOverlay.addEventListener('click', (e) => {
                 if (e.target === connectOverlay) closeConnectModal();
@@ -1103,19 +1250,160 @@
                 if (name) { name.textContent = track.name; name.style.color = ''; }
                 const artist = document.getElementById('np-artist');
                 if (artist) artist.textContent = track.artists.map(a => a.name).join(', ');
+                // Sync modal
+                const modalArt = document.getElementById('np-modal-art');
+                if (modalArt) { modalArt.src = img; modalArt.style.opacity = img ? '1' : '0'; }
+                const modalName = document.getElementById('np-modal-name');
+                if (modalName) { modalName.textContent = track.name; }
+                const modalArtist = document.getElementById('np-modal-artist');
+                if (modalArtist) modalArtist.textContent = track.artists.map(a => a.name).join(', ');
             }
 
             function updatePlayPauseIcon() {
                 document.getElementById('icon-play').style.display  = isPlaying ? 'none'  : 'block';
                 document.getElementById('icon-pause').style.display = isPlaying ? 'block' : 'none';
+                const labelEl = document.getElementById('label-play-pause');
+                if (labelEl) labelEl.textContent = isPlaying ? 'Pause' : 'Play';
+                // Sync modal
+                const mPlay = document.getElementById('np-modal-icon-play');
+                const mPause = document.getElementById('np-modal-icon-pause');
+                if (mPlay)  mPlay.style.display  = isPlaying ? 'none'  : 'block';
+                if (mPause) mPause.style.display = isPlaying ? 'block' : 'none';
             }
 
             function updateProgress() {
                 const pct = currentDuration ? (currentPosition / currentDuration) * 100 : 0;
-                document.getElementById('progress-fill').style.width = `${pct}%`;
-                document.getElementById('time-current').textContent  = msToTime(currentPosition);
-                document.getElementById('time-total').textContent    = msToTime(currentDuration);
+                const fill = document.getElementById('progress-fill');
+                if (fill) fill.style.width = `${pct}%`;
+                const tCur = document.getElementById('time-current');
+                if (tCur) tCur.textContent = msToTime(currentPosition);
+                const tTot = document.getElementById('time-total');
+                if (tTot) tTot.textContent = msToTime(currentDuration);
+                // Sync modal progress
+                const mFill = document.getElementById('np-modal-progress-fill');
+                if (mFill) mFill.style.width = `${pct}%`;
+                const mCur = document.getElementById('np-modal-time-current');
+                if (mCur) mCur.textContent = msToTime(currentPosition);
+                const mTot = document.getElementById('np-modal-time-total');
+                if (mTot) mTot.textContent = msToTime(currentDuration);
+                // Sync player-bar top progress strip
+                const barFill = document.getElementById('player-bar-progress-fill');
+                if (barFill) barFill.style.width = `${pct}%`;
             }
+            // Also wire modal progress bar click to seek
+            document.getElementById('np-modal-progress-bar').addEventListener('click', (e) => {
+                if (!player || !currentDuration) return;
+                const rect   = e.currentTarget.getBoundingClientRect();
+                const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
+                player.seek(seekTo); currentPosition = seekTo; updateProgress();
+            });
+
+            // Modal controls mirror main controls
+            document.getElementById('np-modal-btn-play-pause').addEventListener('click', () => player?.togglePlay());
+            document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());
+            document.getElementById('np-modal-btn-next').addEventListener('click', () => document.getElementById('btn-next').click());
+
+            // Now Playing modal open/close
+            const npModal      = document.getElementById('np-modal');
+            const npModalInner = document.getElementById('np-modal-inner');
+            const npModalClose = document.getElementById('np-modal-close');
+            const npTap        = document.getElementById('now-playing-tap');
+
+            function openNpModal() {
+                npModal.classList.add('open');
+                npModal.setAttribute('aria-hidden', 'false');
+            }
+            function closeNpModal() {
+                npModal.classList.remove('open');
+                npModal.setAttribute('aria-hidden', 'true');
+            }
+
+            npTap.addEventListener('click', openNpModal);
+            npModalClose.addEventListener('click', closeNpModal);
+
+            // Clicking anywhere on the player bar that isn't a button opens the modal
+            document.getElementById('player-bar').addEventListener('click', (e) => {
+                if (!e.target.closest('button')) openNpModal();
+            });
+
+            // ── Shuffle ───────────────────────────────────────────────────────────────
+            function fisherYates(arr) {
+                const a = [...arr];
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            function updateShuffleUI() {
+                const btns = [
+                    document.getElementById('btn-shuffle-library'),
+                    document.getElementById('np-modal-btn-shuffle'),
+                ];
+                btns.forEach(btn => {
+                    if (!btn) return;
+                    btn.classList.toggle('shuffle-active', shuffleEnabled);
+                    btn.title = shuffleEnabled ? 'Shuffle: ON' : 'Shuffle: OFF';
+                });
+            }
+
+            function toggleShuffle() {
+                shuffleEnabled = !shuffleEnabled;
+                updateShuffleUI();
+
+                if (shuffleEnabled) {
+                    // If there are songs in the auto queue, shuffle them now
+                    if (autoQueue.length > 0) {
+                        const shuffled = fisherYates(autoQueue);
+                        autoQueue = shuffled;
+                        socket.emit('queue-set-auto', { roomId, songs: shuffled });
+                        showToast('Auto queue shuffled');
+                    } else {
+                        showToast('Shuffle ON — next fetch will be randomized');
+                    }
+                } else {
+                    showToast('Shuffle OFF');
+                }
+            }
+
+            document.getElementById('btn-shuffle-library')?.addEventListener('click', toggleShuffle);
+            document.getElementById('np-modal-btn-shuffle')?.addEventListener('click', toggleShuffle);
+
+            // Clicking anywhere on the player bar that isn't a button opens the modal
+            document.getElementById('player-bar').addEventListener('click', (e) => {
+                if (!e.target.closest('button')) openNpModal();
+            });
+
+            // Swipe-down to dismiss — only from above the progress bar
+            let swipeStartY = null;
+            const SWIPE_THRESHOLD = 60;
+            npModalInner.addEventListener('touchstart', (e) => {
+                const progressBar = document.getElementById('np-modal-progress-bar');
+                const progressRect = progressBar.getBoundingClientRect();
+                const touch = e.touches[0];
+                if (touch.clientY < progressRect.top) {
+                    swipeStartY = touch.clientY;
+                } else {
+                    swipeStartY = null;
+                }
+            }, { passive: true });
+            npModalInner.addEventListener('touchmove', (e) => {
+                if (swipeStartY === null) return;
+                const dy = e.touches[0].clientY - swipeStartY;
+                if (dy > 0) {
+                    npModalInner.style.transform = `translateY(${dy}px)`;
+                    npModalInner.style.transition = 'none';
+                }
+            }, { passive: true });
+            npModalInner.addEventListener('touchend', (e) => {
+                if (swipeStartY === null) return;
+                const dy = e.changedTouches[0].clientY - swipeStartY;
+                npModalInner.style.transform = '';
+                npModalInner.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
+                if (dy > SWIPE_THRESHOLD) closeNpModal();
+                swipeStartY = null;
+            }, { passive: true });
             <% } %>
 
             // ── Guest now-playing ─────────────────────────────────────────────────────
@@ -1170,7 +1458,9 @@
                 if (setAutoFromHere) {
                     const idx   = currentSongs.findIndex(s => s.uri === trackUri);
                     const after = idx >= 0 ? currentSongs.slice(idx + 1) : currentSongs;
-                    socket.emit('queue-set-auto', { roomId, songs: after.slice(0, 30) });
+                    const slice = after.slice(0, 30);
+                    const ordered = shuffleEnabled ? fisherYates(slice) : slice;
+                    socket.emit('queue-set-auto', { roomId, songs: ordered });
                 }
             }
 
@@ -1188,7 +1478,8 @@
                     const songs = await res.json();
                     if (songs.length > 0) {
                         autoQueueOffset += songs.length;
-                        socket.emit('queue-replenish', { roomId, songs });
+                        const batch = shuffleEnabled ? fisherYates(songs.slice(0, 30)) : songs.slice(0, 30);
+                        socket.emit('queue-replenish', { roomId, songs: batch });
                     }
                 } catch (e) {}
             }
