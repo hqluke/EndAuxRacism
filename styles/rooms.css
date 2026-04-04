@@ -2285,7 +2285,6 @@ body.drawer-open #player-bar {
     width: min(260px, 70vw);
     height: min(260px, 70vw);
     border-radius: 12px;
-    margin-top: 8rem;
     object-fit: cover;
     background: var(--surface2);
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);

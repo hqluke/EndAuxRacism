@@ -1451,6 +1451,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
                 });
+                // The SDK won't auto-play on first interaction without an explicit resume()
+                // call from within a user-gesture context. Calling it here (we're already
+                // inside a click handler chain) unblocks it.
+                if (player && activeDeviceId === deviceId) {
+                    await player.resume();
+                }
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
