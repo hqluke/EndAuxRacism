@@ -30,8 +30,8 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: "DM Mono", monospace;
-    height: 100vh;   /* fallback for browsers without dvh support */
-    height: 100dvh;  /* excludes mobile browser chrome (address bar, nav bar) */
+    height: 100vh; /* fallback for browsers without dvh support */
+    height: 100dvh; /* excludes mobile browser chrome (address bar, nav bar) */
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1304,6 +1304,9 @@ body.drawer-open #player-bar {
     object-fit: cover;
     draggable: false;
     -webkit-user-drag: none;
+    -webkit-touch-callout: none; /* prevents iOS long-press "Open Image" / "Save to Photos" menu */
+    user-select: none;
+    pointer-events: none; /* images are purely decorative — touches fall through to the row */
 }
 .q-art-placeholder {
     width: 56px;

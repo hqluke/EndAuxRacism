@@ -1611,7 +1611,10 @@
                 const dy = e.changedTouches[0].clientY - swipeStartY;
                 npModalInner.style.transform = '';
                 npModalInner.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
-                if (dy > SWIPE_THRESHOLD) closeNpModal();
+                if (dy > SWIPE_THRESHOLD) {
+                    closeDrawer(); // dismiss queue drawer if open
+                    closeNpModal();
+                }
                 swipeStartY = null;
             }, { passive: true });
             <% } %>
@@ -1723,7 +1726,10 @@
                 const dy = e.changedTouches[0].clientY - guestSwipeStartY;
                 guestNpModalInner.style.transform = '';
                 guestNpModalInner.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.2,1)';
-                if (dy > 60) closeGuestNpModal();
+                if (dy > 60) {
+                    closeDrawer(); // dismiss queue drawer if open
+                    closeGuestNpModal();
+                }
                 guestSwipeStartY = null;
             }, { passive: true });
             } // end if (!isHost)
@@ -2563,7 +2569,7 @@
                             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                         </svg>
                     </div>
-                    ${song.image ? `<img class="q-art" src="${song.image}" alt="" />` : `<div class="q-art-placeholder"></div>`}
+                    ${song.image ? `<img class="q-art" src="${song.image}" alt="" draggable="false" />` : `<div class="q-art-placeholder"></div>`}
                     <div class="q-info">
                         <div class="q-name">${song.name}</div>
                         <div class="q-artist">${song.artist}</div>
@@ -2766,6 +2772,9 @@
                         activateDrag(item, e.touches[0]);
                         return;
                     }
+
+                    // Images should not start drag (they open as links on mobile)
+                    if (softZone && e.target.tagName === 'IMG') return;
 
                     if (softZone) {
                         // Long-press required from art/info
