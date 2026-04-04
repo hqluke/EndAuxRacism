@@ -642,8 +642,9 @@
             let autoQueue        = [];
             let isDragging       = false;
             let lastAdvancedUri  = null;
-            let appTriggeredUri  = null;  // URI of last song WE triggered — stops polling from double-advancing
-            let preQueuedUri     = null;  // URI we've already pushed to Spotify's native queue
+            let appTriggeredUri  = null;  // URI of last song WE triggered — stops polling/SDK from double-advancing
+            // NOTE: Near-end queue advancement is handled server-side by playbackManager.
+            // The client only handles manual skips (next/prev buttons, guest skip).
             let historyStack     = []; // up to 10 previously played songs
 
             // Library state
@@ -673,34 +674,21 @@
                     const el = document.getElementById('listener-label');
                     if (el) el.textContent = `${listenerCount} listener${listenerCount === 1 ? '' : 's'}`;
                 }
-                // If the next-up song changed (manual reorder/add), invalidate preQueuedUri
-                // so the new song gets pushed next time preQueueNextSong is called naturally.
-                // Do NOT call preQueueNextSong here — it fires during normal transitions
-                // and causes double-queuing.
                 const newNext = (manualQueue[0] || autoQueue[0])?.uri;
-                if (isHost && newNext && newNext !== prevNext && newNext !== preQueuedUri) {
-                    console.log(`[queue-state] next-up changed: "${prevNext?.slice(-6) ?? 'null'}" → "${newNext.slice(-6)}" — invalidating preQueuedUri (was "${preQueuedUri?.slice(-6) ?? 'null'}")`);
-                    preQueuedUri = null;
+                if (isHost && newNext && newNext !== prevNext) {
+                    console.log(`[queue-state] next-up changed: "${prevNext?.slice(-6) ?? 'null'}" → "${newNext.slice(-6)}"`);
                 }
             });
 
             socket.on('play-track', (song) => {
-                // Don't set currentTrackUri here — player_state_changed owns it
-                console.log(`[play-track] received "${song.name}" | currentTrackUri=${currentTrackUri?.slice(-6) ?? 'null'} song.uri=${song.uri.slice(-6)} match=${song.uri === currentTrackUri}`);
+                // Emitted by the server when the queue advances (manual skip or
+                // server-side near-end detection). Always call playSong — the server
+                // is the source of truth and has already decided what plays next.
+                console.log(`[play-track] "${song.name}" | currentTrackUri=${currentTrackUri?.slice(-6) ?? 'null'}`);
                 nowPlayingSong = song;
                 renderQueue();
                 if (isHost) {
-                    // If Spotify already transitioned to this track naturally (via
-                    // pre-queue), currentTrackUri already matches — don't call
-                    // playSong or it will restart the song from 0.
-                    if (song.uri !== currentTrackUri) {
-                        console.log(`[play-track] uri mismatch — calling playSong`);
-                        playSong(song.uri, false);
-                    } else {
-                        console.log(`[play-track] uri matches currentTrackUri — Spotify already playing, skipping playSong`);
-                    }
-                    // If already playing naturally, do nothing — player_state_changed
-                    // is the single source of truth for pre-queuing the next song.
+                    playSong(song.uri, false);
                 } else {
                     updateGuestNowPlaying(song);
                 }
@@ -796,29 +784,13 @@
                         nowPlayingSong = songData;
                         renderQueue();
 
-                        // Capture then reset — new track means fresh pre-queue state
-                        const wasPreQueued = preQueuedUri;
-                        preQueuedUri = null;
+                        console.log(`[sdk] track changed: "${track.name}" | prevUri=${prevUri?.slice(-6) ?? 'null'} appTriggered=${appTriggeredUri?.slice(-6) ?? 'null'}`);
 
-                        console.log(`[sdk] track changed: "${track.name}" | prevUri=${prevUri?.slice(-6)} wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} appTriggeredUri=${appTriggeredUri?.slice(-6) ?? 'null'}`);
-                        console.log(`[sdk] queue at change — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
-
-                        if (track.uri === wasPreQueued && prevUri !== null) {
-                            // Spotify naturally advanced to our pre-queued song — clean transition.
-                            console.log(`[sdk] ✓ natural transition matched preQueuedUri — emitting queue-advance, skipping playSong`);
-                            appTriggeredUri = track.uri;
-                            socket.emit('queue-advance', { roomId });
-                        } else if (prevUri !== null) {
-                            console.log(`[sdk] ✗ track change did NOT match preQueuedUri — wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} track=${track.uri.slice(-6)}`);
-                        }
-
-                        // Wait for queue-advance to settle on the server before pre-queuing.
-                        // 1500ms gives the socket round-trip time to complete so manualQueue[0]
-                        // reflects the correct next song (not the one that just started).
-                        setTimeout(preQueueNextSong, 1500);
+                        // Broadcast to guests and server so now-playing stays in sync.
+                        // The server's playbackManager is the source of truth for advancing
+                        // the queue — we don't call queue-advance from the client on track change.
+                        socket.emit('now-playing-broadcast', { roomId, song: songData });
                     }
-
-                    socket.emit('now-playing-broadcast', { roomId, song: songData });
 
                     clearInterval(progressInterval);
                     if (isPlaying) {
@@ -826,20 +798,8 @@
                             currentPosition += 500;
                             updateProgress();
 
-                            // ── Near-end pre-queue ──────────────────────────────
-                            // Push the next song into Spotify's native queue ~8s
-                            // before the end so the phone/desktop transitions cleanly.
-                            // preQueuedUri deduplicates — once pushed, we won't push again
-                            // until the next track starts and resets it.
-                            if (
-                                sdkIsActiveDevice &&
-                                currentDuration > 0 &&
-                                currentPosition >= currentDuration - 8000 &&
-                                preQueuedUri === null
-                            ) {
-                                console.log(`[sdk] near-end triggered at ${currentPosition}/${currentDuration} — calling preQueueNextSong`);
-                                preQueueNextSong();
-                            }
+                            // Near-end advancement is handled server-side by playbackManager.
+                            // No client-side queue advance needed here.
                         }, 500);
                     }
 
@@ -904,7 +864,6 @@
             document.getElementById('btn-next').addEventListener('click', () => {
                 appTriggeredUri = currentTrackUri;
                 lastAdvancedUri = currentTrackUri;
-                preQueuedUri    = null; // will be set fresh by playSong after advance
                 socket.emit('queue-advance', { roomId });
             });
             document.getElementById('volume-slider').addEventListener('input', (e) => player?.setVolume(e.target.value / 100));
@@ -988,25 +947,9 @@
                     updateProgress();
                     updatePlayPauseIcon();
 
-                    // Broadcast now-playing to guests if track changed
+                    // Update progress bar and broadcast now-playing if track changed.
+                    // Queue advancement is handled server-side — no client queue-advance here.
                     if (uri !== pollingLastUri) {
-                        const wasPreQueued = preQueuedUri;
-                        preQueuedUri = null; // reset for new track
-
-                        console.log(`[poll] track changed: "${state.item.name}" | wasPreQueued=${wasPreQueued?.slice(-6) ?? 'null'} appTriggeredUri=${appTriggeredUri?.slice(-6) ?? 'null'}`);
-
-                        if (pollingLastUri !== null && uri === wasPreQueued) {
-                            console.log(`[poll] ✓ natural transition matched preQueuedUri — emitting queue-advance`);
-                            appTriggeredUri = uri;
-                            socket.emit('queue-advance', { roomId });
-                        } else if (pollingLastUri !== null && appTriggeredUri !== uri) {
-                            console.log(`[poll] native skip detected — "${state.item.name}" — advancing queue`);
-                            appTriggeredUri = uri;
-                            socket.emit('queue-advance', { roomId });
-                        } else {
-                            console.log(`[poll] track change suppressed (appTriggered or first track)`);
-                        }
-
                         pollingLastUri = uri;
                         const songData = {
                             name:   state.item.name,
@@ -1017,24 +960,9 @@
                         nowPlayingSong = songData;
                         updateNowPlaying(state.item);
                         renderQueue();
+                        // Broadcast so server tracks now-playing and guests stay in sync
                         socket.emit('now-playing-broadcast', { roomId, song: songData });
-
-                        // Wait for queue-advance server round-trip before pre-queuing
-                        setTimeout(preQueueNextSong, 1500);
-                    }
-
-                    // Near-end detection — pre-queue next song ~8s from end so
-                    // Spotify's native transition is seamless. The polling's track-change
-                    // detection will call queue-advance once the new track starts.
-                    // preQueuedUri deduplicates — only fires once per track.
-                    if (
-                        playing &&
-                        duration > 0 &&
-                        pos >= duration - 8000 &&
-                        preQueuedUri === null
-                    ) {
-                        console.log(`[poll] near-end at ${pos}/${duration} — calling preQueueNextSong`);
-                        preQueueNextSong();
+                        console.log(`[poll] track changed: "${state.item.name}"`);
                     }
                 } catch (e) {
                     console.warn('[connect] poll error:', e.message);
@@ -1224,21 +1152,17 @@
                     }
                 }
 
-                // Mark this URI as app-triggered so polling doesn't treat it as a native skip
+                // Mark this URI as app-triggered so polling/SDK don't double-advance
                 appTriggeredUri = trackUri;
-                preQueuedUri    = null; // reset — we're explicitly changing tracks
 
-                console.log(`[playSong] calling PUT /play for "${trackUri.slice(-6)}" | setAutoFromHere=${setAutoFromHere} skipHistoryPush=${skipHistoryPush}`);
-                console.log(`[playSong] queue at call — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
+                console.log(`[playSong] PUT /play "${trackUri.slice(-6)}" | setAutoFromHere=${setAutoFromHere}`);
+                console.log(`[playSong] queue — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
 
                 await fetch('/spotify/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
                 });
-                // preQueueNextSong is intentionally NOT called here.
-                // player_state_changed will fire when Spotify confirms playback,
-                // and that is the single place we pre-queue the next song.
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
@@ -1250,50 +1174,7 @@
                 }
             }
 
-            // ── Pre-queue next song into Spotify's native queue ───────────────────────
-            // This is the SINGLE place we push to Spotify's queue. It is called only
-            // from player_state_changed and pollPlaybackState on track change.
-            // preQueuedUri tracks what we've already pushed so we never push twice.
-            let preQueueInFlight = false;
-            async function preQueueNextSong() {
-                if (!isHost) return;
-                if (preQueueInFlight) {
-                    console.log(`[prequeue] SKIP — already in flight`);
-                    return;
-                }
-                const nextSong = manualQueue[0] || autoQueue[0];
-                if (!nextSong?.uri) {
-                    console.log(`[prequeue] SKIP — queue is empty`);
-                    return;
-                }
-                if (nextSong.uri === preQueuedUri) {
-                    console.log(`[prequeue] SKIP — already queued "${nextSong.name}"`);
-                    return;
-                }
-                if (nextSong.uri === currentTrackUri) {
-                    console.log(`[prequeue] SKIP — next song "${nextSong.name}" is already playing (currentTrackUri match)`);
-                    return;
-                }
 
-                console.log(`[prequeue] PUSHING "${nextSong.name}" → Spotify native queue | currentTrack=${currentTrackUri?.slice(-6)} preQueuedUri was=${preQueuedUri?.slice(-6) ?? 'null'}`);
-                console.log(`[prequeue] full queue state — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
-                preQueuedUri    = nextSong.uri;
-                preQueueInFlight = true;
-
-                try {
-                    await fetch('/spotify/queue', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ trackUri: nextSong.uri }),
-                    });
-                    console.log(`[prequeue] ✓ successfully queued "${nextSong.name}"`);
-                } catch (e) {
-                    console.warn('[prequeue] ✗ failed:', e.message);
-                    preQueuedUri = null; // allow retry
-                } finally {
-                    preQueueInFlight = false;
-                }
-            }
 
             function queueSong(song) {
                 socket.emit('queue-add', { roomId, song });

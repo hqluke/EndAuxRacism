@@ -7,11 +7,15 @@ const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
 const roomManager = require("./roomManager");
+const playbackManager = require("./playbackManager");
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// Init playbackManager with the io instance so it can emit to rooms
+playbackManager.init(io);
 
 // ─── View Engine ──────────────────────────────────────────────────────────────
 
@@ -74,6 +78,32 @@ passport.use(
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
+// ─── App Routes ───────────────────────────────────────────────────────────────
+
+app.get("/", (req, res) => res.render("index"));
+
+// ─── Spotify API Routes (auth required) ──────────────────────────────────────
+
+const spotifyRouter = require("./routes/spotifyRouter");
+app.use("/spotify", ensureAuth, spotifyRouter);
+
+// ─── Rooms Routes (no auth required — guests can join) ───────────────────────
+
+const roomsRouter = require("./routes/roomsRouter");
+app.use("/rooms", roomsRouter);
+
+// ─── Apple Music Routes (no auth required — guests use this) ─────────────────
+
+const appleMusicRouter = require("./routes/appleMusicRouter");
+app.use("/apple", appleMusicRouter);
+
+// ─── Auth Guard ───────────────────────────────────────────────────────────────
+
+function ensureAuth(req, res, next) {
+    if (req.isAuthenticated()) return next();
+    res.redirect("/");
+}
+
 // ─── Auth Routes ─────────────────────────────────────────────────────────────
 
 app.get(
@@ -95,7 +125,7 @@ app.get(
 app.get(
     "/auth/spotify/callback",
     passport.authenticate("spotify", { failureRedirect: "/" }),
-    (req, res) => res.redirect("/spotify/dashboard"),
+    (req, res) => res.redirect(`/rooms/${req.user.id}`),
 );
 
 app.get("/logout", (req, res, next) => {
@@ -105,36 +135,10 @@ app.get("/logout", (req, res, next) => {
     });
 });
 
-// ─── App Routes ───────────────────────────────────────────────────────────────
-
-app.get("/", (req, res) => res.render("index"));
-
-// ─── Spotify API Routes (auth required) ──────────────────────────────────────
-
-const spotifyRouter = require("./routes/spotifyRouter");
-app.use("/spotify", ensureAuth, spotifyRouter);
-
-// ─── Rooms Routes (no auth required — guests can join) ───────────────────────
-
-const roomsRouter = require("./routes/roomsRouter");
-app.use("/rooms", roomsRouter); // No ensureAuth here
-
-// ─── Apple Music Routes (no auth required — guests use this) ─────────────────
-
-const appleMusicRouter = require("./routes/appleMusicRouter");
-app.use("/apple", appleMusicRouter);
-
-// ─── Auth Guard ───────────────────────────────────────────────────────────────
-
-function ensureAuth(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.redirect("/");
-}
 
 // ─── Socket.io ───────────────────────────────────────────────────────────────
 
 io.on("connection", (socket) => {
-    // Guests are allowed — user may be null for unauthenticated connections
     const user = socket.request.session?.passport?.user || null;
     const userId = user?.id || `guest_${socket.id.slice(0, 6)}`;
     const displayName = user?.displayName || "Guest";
@@ -143,19 +147,33 @@ io.on("connection", (socket) => {
         socket.join(roomId);
         socket.currentRoom = roomId;
         roomManager.ensureRoom(roomId);
+
+        // Store both tokens when the host joins so the server can refresh
+        // the access token independently when the host's phone goes to sleep.
         if (user?.accessToken) {
             roomManager.setHostToken(roomId, user.accessToken);
         }
+        if (user?.refreshToken) {
+            roomManager.setRefreshToken(roomId, user.refreshToken);
+        }
+
+        // Start server-side playback polling for this room if not already running
+        if (user?.id === roomId) {
+            playbackManager.startPolling(roomId);
+        }
+
         const roomSockets = await io.in(roomId).fetchSockets();
         const listenerCount = roomSockets.length;
         const queueState = roomManager.getQueue(roomId);
+
         // Send queue + count to the joiner
         socket.emit("queue-state", { ...queueState, listenerCount });
-        // Tell everyone else someone joined
-        socket
-            .to(roomId)
-            .emit("user-joined", { userId, displayName, listenerCount });
-        // Push updated count to the ENTIRE room so the host's label always updates
+
+        // Send current now-playing to the joiner so they see what's playing immediately
+        const nowPlaying = roomManager.getNowPlaying(roomId);
+        if (nowPlaying) socket.emit("now-playing", nowPlaying);
+
+        socket.to(roomId).emit("user-joined", { userId, displayName, listenerCount });
         io.to(roomId).emit("listener-count", { listenerCount });
     });
 
@@ -164,7 +182,6 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // Prepend a song to the front of manualQueue (used by back button)
     socket.on("queue-prepend", ({ roomId, song }) => {
         console.log(`[socket:${roomId}] queue-prepend "${song?.name}"`);
         roomManager.prependToManualQueue(roomId, song);
@@ -181,31 +198,27 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
-    // FIX: this handler was missing — dragging auto→manual never persisted server-side
-    socket.on(
-        "queue-move-to-manual",
-        ({ roomId, fromAutoIndex, toManualIndex }) => {
-            console.log(
-                `[socket:${roomId}] queue-move-to-manual fromAuto=${fromAutoIndex} toManual=${toManualIndex}`,
-            );
-            roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
-            io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
-        },
-    );
+    socket.on("queue-move-to-manual", ({ roomId, fromAutoIndex, toManualIndex }) => {
+        console.log(`[socket:${roomId}] queue-move-to-manual fromAuto=${fromAutoIndex} toManual=${toManualIndex}`);
+        roomManager.moveToManualQueue(roomId, fromAutoIndex, toManualIndex);
+        io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
+    });
 
     socket.on("queue-set-auto", ({ roomId, songs }) => {
         roomManager.setAutoQueue(roomId, songs);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
     });
 
+    // queue-advance is now only called from the client for manual skips (next button,
+    // guest skip request). Server-side polling handles near-end advancement automatically.
     socket.on("queue-advance", ({ roomId }) => {
         const next = roomManager.advance(roomId);
         io.to(roomId).emit("queue-state", roomManager.getQueue(roomId));
         if (next) {
-            console.log(
-                `[socket:${roomId}] queue-advance → playing "${next.name}"`,
-            );
+            console.log(`[socket:${roomId}] queue-advance → playing "${next.name}"`);
             io.to(roomId).emit("play-track", next);
+            // Reset poller state so it picks up the new track immediately
+            playbackManager.resetLastUri(roomId);
         }
     });
 
@@ -215,13 +228,14 @@ io.on("connection", (socket) => {
     });
 
     socket.on("queue-back", async ({ roomId }) => {
-        // Guests can request a back — server prepends nowPlaying to manual queue
-        // and emits play-track with the front of history (handled client-side by host)
-        // Since guests don't have history, we just signal the host to go back
         socket.to(roomId).emit("guest-request-back");
     });
 
+    // Host broadcasts what's now playing so guests and server stay in sync
     socket.on("now-playing-broadcast", ({ roomId, song }) => {
+        roomManager.setNowPlaying(roomId, song);
+        // Reset poller's lastUri so it doesn't think this is a new track on next poll
+        playbackManager.resetLastUri(roomId);
         socket.to(roomId).emit("now-playing", song);
     });
 
@@ -229,11 +243,13 @@ io.on("connection", (socket) => {
         if (socket.currentRoom) {
             const roomSockets = await io.in(socket.currentRoom).fetchSockets();
             const listenerCount = roomSockets.length;
-            socket
-                .to(socket.currentRoom)
-                .emit("user-left", { userId, displayName, listenerCount });
-            // Push updated count to remaining room members
+            socket.to(socket.currentRoom).emit("user-left", { userId, displayName, listenerCount });
             io.to(socket.currentRoom).emit("listener-count", { listenerCount });
+
+            // If the room is now empty, stop polling to save resources
+            if (listenerCount === 0) {
+                playbackManager.stopPolling(socket.currentRoom);
+            }
         }
     });
 });

@@ -12,9 +12,11 @@ const rooms = new Map();
 function ensureRoom(roomId) {
     if (!rooms.has(roomId)) {
         rooms.set(roomId, {
-            autoQueue: [],
-            manualQueue: [],
-            hostToken: null,  // Spotify access token from the host
+            autoQueue:    [],
+            manualQueue:  [],
+            hostToken:    null,  // Spotify access token from the host
+            refreshToken: null,  // Spotify refresh token — used for server-side token refresh
+            nowPlaying:   null,  // { name, artist, image, uri } — last known playing track
         });
     }
     return rooms.get(roomId);
@@ -27,6 +29,24 @@ function setHostToken(roomId, token) {
 
 function getHostToken(roomId) {
     return rooms.get(roomId)?.hostToken || null;
+}
+
+function setRefreshToken(roomId, token) {
+    const room = ensureRoom(roomId);
+    room.refreshToken = token;
+}
+
+function getRefreshToken(roomId) {
+    return rooms.get(roomId)?.refreshToken || null;
+}
+
+function setNowPlaying(roomId, song) {
+    const room = ensureRoom(roomId);
+    room.nowPlaying = song;
+}
+
+function getNowPlaying(roomId) {
+    return rooms.get(roomId)?.nowPlaying || null;
 }
 
 function getQueue(roomId) {
@@ -146,4 +166,8 @@ module.exports = {
     moveToManualQueue,
     setHostToken,
     getHostToken,
+    setRefreshToken,
+    getRefreshToken,
+    setNowPlaying,
+    getNowPlaying,
 };
