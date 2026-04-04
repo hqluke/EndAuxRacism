@@ -2,7 +2,10 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
         <title>EndAuxRacism — Room</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -457,11 +460,18 @@
         </div>
         <% } %>
 
+        <!-- ── Queue Backdrop (mobile overlay) ── -->
+        <div id="queue-backdrop"></div>
+
         <!-- ── Queue Drawer ── -->
         <div id="queue-drawer">
             <div class="drawer-header">
                 <span class="drawer-title">Queue</span>
-                <button id="btn-shuffle-queue" class="btn-shuffle-library" title="Shuffle manual queue">
+                <button
+                    id="btn-shuffle-queue"
+                    class="btn-shuffle-library"
+                    title="Shuffle manual queue"
+                >
                     <svg
                         width="14"
                         height="14"
@@ -511,11 +521,7 @@
                 </div>
             </div>
             <div class="player-controls">
-                <button
-                    class="ctrl-btn"
-                    id="btn-prev"
-                    title="Previous"
-                >
+                <button class="ctrl-btn" id="btn-prev" title="Previous">
                     <svg
                         width="20"
                         height="20"
@@ -550,11 +556,7 @@
                         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
                     </svg>
                 </button>
-                <button
-                    class="ctrl-btn"
-                    id="btn-next"
-                    title="Next"
-                >
+                <button class="ctrl-btn" id="btn-next" title="Next">
                     <svg
                         width="20"
                         height="20"
@@ -704,8 +706,15 @@
                         id="np-modal-btn-queue"
                         title="Queue"
                     >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path
+                                d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                            />
                         </svg>
                     </button>
                 </div>
@@ -766,7 +775,11 @@
 
         <!-- ── Guest Now Playing Modal ── -->
         <div id="guest-np-modal" class="np-modal" aria-hidden="true">
-            <button id="guest-np-modal-close" class="np-modal-close" title="Close">
+            <button
+                id="guest-np-modal-close"
+                class="np-modal-close"
+                title="Close"
+            >
                 <svg
                     width="20"
                     height="20"
@@ -779,16 +792,28 @@
                 </svg>
             </button>
             <div class="np-modal-inner" id="guest-np-modal-inner">
-                <img id="guest-np-modal-art" src="" alt="" class="np-modal-art" />
+                <img
+                    id="guest-np-modal-art"
+                    src=""
+                    alt=""
+                    class="np-modal-art"
+                />
                 <div class="np-modal-info">
                     <div id="guest-np-modal-name" class="np-modal-name">
                         Waiting for host...
                     </div>
-                    <div id="guest-np-modal-artist" class="np-modal-artist"></div>
+                    <div
+                        id="guest-np-modal-artist"
+                        class="np-modal-artist"
+                    ></div>
                 </div>
                 <div class="np-modal-progress">
                     <div class="progress-wrap">
-                        <span class="time-label" id="guest-np-modal-time-current">0:00</span>
+                        <span
+                            class="time-label"
+                            id="guest-np-modal-time-current"
+                            >0:00</span
+                        >
                         <div
                             id="guest-np-modal-progress-bar"
                             class="np-modal-progress-bar"
@@ -798,7 +823,11 @@
                                 class="np-modal-progress-fill"
                             ></div>
                         </div>
-                        <span class="time-label right" id="guest-np-modal-time-total">0:00</span>
+                        <span
+                            class="time-label right"
+                            id="guest-np-modal-time-total"
+                            >0:00</span
+                        >
                     </div>
                 </div>
                 <div class="np-modal-controls">
@@ -808,14 +837,28 @@
                         style="opacity: 0; pointer-events: none"
                     >
                         <!-- placeholder to keep layout symmetric -->
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/></svg>
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="1" />
+                        </svg>
                     </button>
                     <button
                         class="ctrl-btn np-modal-ctrl-btn"
                         id="guest-np-modal-btn-prev"
                         title="Back"
                     >
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
                             <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
                         </svg>
                     </button>
@@ -824,7 +867,12 @@
                         id="guest-np-modal-btn-next"
                         title="Skip"
                     >
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
                             <path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                         </svg>
                     </button>
@@ -833,8 +881,15 @@
                         id="guest-np-modal-btn-queue"
                         title="Queue"
                     >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path
+                                d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                            />
                         </svg>
                     </button>
                 </div>
@@ -970,62 +1025,60 @@
             });
 
             // ── Queue drawer ──────────────────────────────────────────────────────────
-            const drawer    = document.getElementById('queue-drawer');
-            const toggleBtn = document.getElementById('btn-queue-toggle');
-            const closeBtn  = document.getElementById('btn-close-drawer');
+            const drawer      = document.getElementById('queue-drawer');
+            const toggleBtn   = document.getElementById('btn-queue-toggle');
+            const closeBtn    = document.getElementById('btn-close-drawer');
+            const qBackdrop   = document.getElementById('queue-backdrop');
 
-            function openDrawer()  { drawer.classList.add('open'); document.body.classList.add('drawer-open'); toggleBtn.classList.add('active'); }
-            function closeDrawer() { drawer.classList.remove('open'); document.body.classList.remove('drawer-open'); toggleBtn.classList.remove('active'); }
+            function openDrawer() {
+                drawer.classList.add('open');
+                document.body.classList.add('drawer-open');
+                toggleBtn.classList.add('active');
+                qBackdrop.classList.add('visible');
+            }
+            function closeDrawer() {
+                drawer.classList.remove('open');
+                document.body.classList.remove('drawer-open');
+                toggleBtn.classList.remove('active');
+                qBackdrop.classList.remove('visible');
+            }
 
             toggleBtn.addEventListener('click', () => drawer.classList.contains('open') ? closeDrawer() : openDrawer());
             closeBtn.addEventListener('click', closeDrawer);
 
-            // ── Swipe right to close queue drawer ─────────────────────────────────────
-            // Mirrors the np-modal swipe-down pattern.
-            // Only fires when NOT dragging a queue item or pressing a button.
-            (function initDrawerSwipe() {
+            // Tap backdrop to close (mobile)
+            qBackdrop.addEventListener('click', closeDrawer);
+
+            // ── Swipe right on backdrop to close (mobile) ─────────────────────────────
+            // The backdrop sits to the left of the drawer — swiping rightward on it
+            // mirrors the feel of the drawer dismissing without fighting browser back nav.
+            (function initBackdropSwipe() {
                 let swipeStartX = null;
                 let swipeStartY = null;
-                const SWIPE_H_THRESHOLD = 72;  // px rightward to commit close
-                const SWIPE_V_LOCK      = 12;  // px vertical drift that cancels the gesture
+                const SWIPE_H_THRESHOLD = 16;
+                const SWIPE_V_LOCK      = 14;
 
-                drawer.addEventListener('touchstart', (e) => {
-                    // Ignore if touching a queue item (could be a drag) or any button
-                    const draggable = e.target.closest('.queue-item');
-                    const btn       = e.target.closest('button');
-                    if (draggable || btn) { swipeStartX = null; return; }
+                qBackdrop.addEventListener('touchstart', (e) => {
                     const t = e.touches[0];
                     swipeStartX = t.clientX;
                     swipeStartY = t.clientY;
-                    drawer.style.transition = 'none';
                 }, { passive: true });
 
-                drawer.addEventListener('touchmove', (e) => {
+                qBackdrop.addEventListener('touchmove', (e) => {
                     if (swipeStartX === null) return;
-                    const t  = e.touches[0];
-                    const dx = t.clientX - swipeStartX;
-                    const dy = Math.abs(t.clientY - swipeStartY);
-                    // Cancel if the gesture is more vertical than horizontal
-                    if (dy > SWIPE_V_LOCK && Math.abs(dx) < dy) { swipeStartX = null; drawer.style.transform = ''; return; }
-                    if (dx > 0) {
-                        drawer.style.transform = `translateX(${dx}px)`;
-                    }
+                    const dx = e.touches[0].clientX - swipeStartX;
+                    const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+                    if (dy > SWIPE_V_LOCK && Math.abs(dx) < dy) { swipeStartX = null; return; }
                 }, { passive: true });
 
-                drawer.addEventListener('touchend', (e) => {
+                qBackdrop.addEventListener('touchend', (e) => {
                     if (swipeStartX === null) return;
                     const dx = e.changedTouches[0].clientX - swipeStartX;
-                    drawer.style.transition = '';
-                    drawer.style.transform  = '';
                     if (dx > SWIPE_H_THRESHOLD) closeDrawer();
                     swipeStartX = null;
                 }, { passive: true });
 
-                drawer.addEventListener('touchcancel', () => {
-                    swipeStartX = null;
-                    drawer.style.transition = '';
-                    drawer.style.transform  = '';
-                }, { passive: true });
+                qBackdrop.addEventListener('touchcancel', () => { swipeStartX = null; }, { passive: true });
             })();
 
             // ── Fisher-Yates shuffle — used by both host and guests ───────────────────
@@ -1787,7 +1840,7 @@
             (function initSidebarSwipe() {
                 let swipeStartX = null;
                 let swipeStartY = null;
-                const SWIPE_H_THRESHOLD = 72;
+                const SWIPE_H_THRESHOLD = 16;
                 const SWIPE_V_LOCK      = 12;
 
                 sidebar.addEventListener('touchstart', (e) => {
@@ -2470,7 +2523,7 @@
 
                 const manLabel = document.createElement('div');
                 manLabel.className = 'queue-section-label';
-                manLabel.textContent = `Next Up (${manualQueue.length})`;
+                manLabel.textContent = `Manual Queue (${manualQueue.length})`;
                 body.appendChild(manLabel);
 
                 if (manualQueue.length === 0) {
@@ -2485,7 +2538,7 @@
                 const autoLabel = document.createElement('div');
                 autoLabel.className = 'queue-section-label';
                 autoLabel.style.marginTop = '12px';
-                autoLabel.textContent = `Up Next (${autoQueue.length})`;
+                autoLabel.textContent = `Auto Queue (${autoQueue.length})`;
                 body.appendChild(autoLabel);
 
                 if (autoQueue.length === 0) {
@@ -2648,27 +2701,42 @@
                 });
 
                 // ── Touch drag (mobile) ───────────────────────────────────────
-                // We create a floating clone that follows the finger so the user
-                // gets visual feedback, then on touchend we hit-test to find the
-                // target item underneath.
-                let touchClone = null;
-                let touchSrc   = null;
+                // drag-handle  → instant drag on touchstart
+                // q-art/q-info → long-press (300ms hold without moving) to activate
+                //
+                // During the long-press countdown the item gets a subtle scale-up so
+                // the user knows something is about to happen. If the finger moves
+                // more than CANCEL_MOVE px before the timer fires, we abort and let
+                // normal scrolling happen.
+                const LONG_PRESS_MS  = 300;
+                const CANCEL_MOVE_PX = 8;
+
+                let touchClone   = null;
+                let touchSrc     = null;
                 let touchOffsetX = 0, touchOffsetY = 0;
 
-                body.addEventListener('touchstart', (e) => {
-                    const dragZone = e.target.closest('.drag-handle, .q-art, .q-art-placeholder, .q-info');
-                    const item     = dragZone ? dragZone.closest('.queue-item') : null;
-                    if (!item) return;
+                // Long-press pending state
+                let lpTimer      = null;  // setTimeout handle
+                let lpItem       = null;  // item waiting to be confirmed
+                let lpStartX     = 0;
+                let lpStartY     = 0;
 
-                    touchSrc = item;
+                function cancelLongPress() {
+                    if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+                    if (lpItem)  { lpItem.style.transform = ''; lpItem.style.transition = ''; lpItem = null; }
+                }
+
+                function activateDrag(item, touch) {
+                    touchSrc  = item;
                     isDragging = true;
-                    const touch = e.touches[0];
-                    const rect  = item.getBoundingClientRect();
-
+                    const rect = item.getBoundingClientRect();
                     touchOffsetX = touch.clientX - rect.left;
                     touchOffsetY = touch.clientY - rect.top;
 
-                    // Build a visual clone
+                    // Reset any long-press transform before cloning
+                    item.style.transform = '';
+                    item.style.transition = '';
+
                     touchClone = item.cloneNode(true);
                     touchClone.style.cssText = `
                         position: fixed;
@@ -2685,9 +2753,55 @@
                     `;
                     document.body.appendChild(touchClone);
                     item.classList.add('dragging');
-                }, { passive: true });
+                }
+
+                body.addEventListener('touchstart', (e) => {
+                    const handle  = e.target.closest('.drag-handle');
+                    const softZone = e.target.closest('.q-art, .q-art-placeholder, .q-info, .q-name, .q-artist');
+
+                    if (handle) {
+                        // Instant drag from the handle
+                        const item = handle.closest('.queue-item');
+                        if (!item) return;
+                        activateDrag(item, e.touches[0]);
+                        return;
+                    }
+
+                    if (softZone) {
+                        // Long-press required from art/info
+                        const item = softZone.closest('.queue-item');
+                        if (!item) return;
+                        const touch = e.touches[0];
+                        lpItem   = item;
+                        lpStartX = touch.clientX;
+                        lpStartY = touch.clientY;
+
+                        // Visual "charging" feedback
+                        item.style.transition = `transform ${LONG_PRESS_MS}ms ease`;
+                        item.style.transform  = 'scale(1.03)';
+
+                        lpTimer = setTimeout(() => {
+                            lpTimer = null;
+                            if (!lpItem) return;
+                            const it = lpItem; lpItem = null;
+                            // Re-fetch touch — use lpStart position for offset calc
+                            const t = { clientX: lpStartX, clientY: lpStartY };
+                            activateDrag(it, t);
+                        }, LONG_PRESS_MS);
+                        return;
+                    }
+                }, { passive: false });
 
                 body.addEventListener('touchmove', (e) => {
+                    // Cancel long-press if finger drifts before timer fires
+                    if (lpItem) {
+                        const t  = e.touches[0];
+                        const dx = Math.abs(t.clientX - lpStartX);
+                        const dy = Math.abs(t.clientY - lpStartY);
+                        if (dx > CANCEL_MOVE_PX || dy > CANCEL_MOVE_PX) cancelLongPress();
+                        if (!touchSrc) return; // still just scrolling — don't block
+                    }
+
                     if (!touchSrc || !touchClone) return;
                     e.preventDefault(); // stop page scroll while dragging
 
@@ -2717,6 +2831,7 @@
                 }, { passive: false });
 
                 body.addEventListener('touchend', (e) => {
+                    cancelLongPress();
                     if (!touchSrc) return;
                     stopAutoScroll();
 
@@ -2735,6 +2850,7 @@
                 }, { passive: true });
 
                 body.addEventListener('touchcancel', () => {
+                    cancelLongPress();
                     stopAutoScroll();
                     touchClone?.remove(); touchClone = null;
                     touchSrc?.classList.remove('dragging');

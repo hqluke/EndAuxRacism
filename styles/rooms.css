@@ -1141,6 +1141,10 @@ body.drawer-open #player-bar {
 }
 
 /* ── Queue Drawer ── */
+#queue-backdrop {
+    display: none;
+}
+
 #queue-drawer {
     position: fixed;
     top: 0;
@@ -1228,15 +1232,15 @@ body.drawer-open #player-bar {
 
 .queue-item {
     display: grid;
-    grid-template-columns: 32px 56px 1fr 36px 32px;
+    grid-template-columns: 32px 56px 1fr 28px;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 12px 8px 12px 16px;
     border: 1px solid transparent;
     border-radius: 8px;
     margin: 0 8px 4px;
     transition: background 0.12s;
-    touch-action: pan-y; /* allow vertical scroll, block horizontal */
+    touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
     cursor: default;
@@ -1300,7 +1304,6 @@ body.drawer-open #player-bar {
     object-fit: cover;
     draggable: false;
     -webkit-user-drag: none;
-    pointer-events: none; /* prevent image from intercepting drag */
 }
 .q-art-placeholder {
     width: 56px;
@@ -1308,11 +1311,9 @@ body.drawer-open #player-bar {
     border-radius: 4px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    pointer-events: none;
 }
 .q-info {
     overflow: hidden;
-    pointer-events: none; /* prevent text selection during drag */
 }
 .q-name {
     font-family: "Syne", sans-serif;
@@ -1543,10 +1544,36 @@ body.drawer-open #player-bar {
         font-size: 0.72rem;
     }
 
-    /* Queue drawer */
+    /* Queue drawer — partial overlay so player bar stays accessible */
     #queue-drawer {
-        width: 100vw;
+        width: 72vw;
         bottom: 72px;
+        z-index: 150;
+    }
+
+    /* Backdrop strip to the left of the drawer — tap or swipe right to close */
+    #queue-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 72px;
+        z-index: 149;
+        background: rgba(0, 0, 0, 0.55);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #queue-backdrop.visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* On mobile, drawer overlays — don't push main content */
+    body.drawer-open main,
+    body.drawer-open #guest-panel {
+        margin-right: 0;
     }
 
     #import-status {
