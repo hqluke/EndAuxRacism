@@ -148,13 +148,13 @@ io.on("connection", (socket) => {
         socket.currentRoom = roomId;
         roomManager.ensureRoom(roomId);
 
-        // Store both tokens when the host joins so the server can refresh
-        // the access token independently when the host's phone goes to sleep.
-        if (user?.accessToken) {
-            roomManager.setHostToken(roomId, user.accessToken);
-        }
-        if (user?.refreshToken) {
-            roomManager.setRefreshToken(roomId, user.refreshToken);
+        // Only store tokens for the host (the user whose ID matches the roomId).
+        // Storing tokens for Spotify-authenticated guests would overwrite the host's
+        // token, causing the server-side poller to play on the guest's account and
+        // breaking token refresh for the host.
+        if (user?.id === roomId) {
+            if (user.accessToken)  roomManager.setHostToken(roomId, user.accessToken);
+            if (user.refreshToken) roomManager.setRefreshToken(roomId, user.refreshToken);
         }
 
         // Start server-side playback polling for this room if not already running

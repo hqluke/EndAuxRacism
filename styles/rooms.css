@@ -30,8 +30,9 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: "DM Mono", monospace;
-    height: 100vh;
-    overflow: hidden; /* prevent body scroll — inner areas scroll instead */
+    height: 100vh;   /* fallback for browsers without dvh support */
+    height: 100dvh;  /* excludes mobile browser chrome (address bar, nav bar) */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -811,6 +812,7 @@ body.drawer-open #guest-panel {
     display: flex;
     align-items: center;
     padding: 0 32px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     gap: 24px;
     z-index: 100;
     position: relative;
@@ -1059,10 +1061,10 @@ body.drawer-open #player-bar {
     background: rgba(15, 15, 15, 0.97);
     border-top: 1px solid var(--border);
     backdrop-filter: blur(16px);
-    /* FIX: vertically stack sdk-status/queue toggle to make room for song name */
     display: flex;
     align-items: center;
     padding: 0 16px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     gap: 12px;
     z-index: 100;
     position: relative;

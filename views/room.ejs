@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <title>EndAuxRacism — Room</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -1418,45 +1418,41 @@
             }
 
             // ── Play a track ──────────────────────────────────────────────────────────
+            let hasPlayedOnce = false; // tracks whether the SDK has played anything yet
+
             async function playSong(trackUri, setAutoFromHere = true, skipHistoryPush = false) {
                 if (!isHost) return;
                 if (!activeDeviceId) return alert('Player not ready yet');
-                // console.log(`[player] playSong "${trackUri}" setAutoFromHere=${setAutoFromHere}`);
 
-                // Push the INCOMING song to history immediately when it starts playing,
-                // so back button always has an accurate recent-play list regardless of
-                // whether the previous song finished naturally or was manually skipped.
                 if (!skipHistoryPush) {
-                    // Find the song object for trackUri so we have name/artist/image
                     const incoming = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri)
                                   || (nowPlayingSong?.uri === trackUri ? nowPlayingSong : null);
                     if (incoming) {
-                        // Only push if it's not already the most recent history entry
                         if (historyStack[0]?.uri !== trackUri) {
                             historyStack.unshift({ ...incoming });
                             if (historyStack.length > 10) historyStack.pop();
-                            // console.log(`[history] pushed "${incoming.name}" — stack: [${historyStack.map(s => s.name).join(', ')}]`);
                         }
                     }
                 }
 
-                // Mark this URI as app-triggered so polling/SDK don't double-advance
                 appTriggeredUri = trackUri;
 
                 console.log(`[playSong] PUT /play "${trackUri.slice(-6)}" | setAutoFromHere=${setAutoFromHere}`);
                 console.log(`[playSong] queue — manual:[${manualQueue.map(s=>s.name).join(', ')||'empty'}] auto:[${autoQueue.slice(0,3).map(s=>s.name).join(', ')||'empty'}...]`);
+
+                // On the very first play the browser hasn't activated the audio context yet.
+                // Calling resume() here (inside a user-gesture call chain) warms it up so
+                // the subsequent /spotify/play doesn't land on a paused SDK.
+                if (!hasPlayedOnce && player && activeDeviceId === deviceId) {
+                    hasPlayedOnce = true;
+                    try { await player.resume(); } catch (e) { /* ignore — not yet playing */ }
+                }
 
                 await fetch('/spotify/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
                 });
-                // The SDK won't auto-play on first interaction without an explicit resume()
-                // call from within a user-gesture context. Calling it here (we're already
-                // inside a click handler chain) unblocks it.
-                if (player && activeDeviceId === deviceId) {
-                    await player.resume();
-                }
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
@@ -2006,24 +2002,22 @@
                 guestBackdrop.addEventListener('click', closeGuestSidebar);
             }
 
-            // Guest skip button
-            const guestSkip = document.getElementById('btn-guest-skip');
-            if (guestSkip) {
-                guestSkip.addEventListener('click', () => socket.emit('queue-advance', { roomId }));
-            }
-
-            // Guest back button — same 5s rule as host
-            const guestPrev = document.getElementById('btn-guest-prev');
-            if (guestPrev) {
-                guestPrev.addEventListener('click', () => {
-                    socket.emit('queue-back', { roomId });
-                });
-            }
-
             // Init
             loadGuestPlaylists();
 
             <% } // end if (!user) %>
+
+            // Guest skip/prev — wired for ALL non-host users regardless of login status
+            if (!isHost) {
+                const guestSkip = document.getElementById('btn-guest-skip');
+                if (guestSkip) {
+                    guestSkip.addEventListener('click', () => socket.emit('queue-advance', { roomId }));
+                }
+                const guestPrev = document.getElementById('btn-guest-prev');
+                if (guestPrev) {
+                    guestPrev.addEventListener('click', () => socket.emit('queue-back', { roomId }));
+                }
+            }
 
             // ── Fuzzy search ──────────────────────────────────────────────────────────
             function fuzzyScore(str, query) {
