@@ -505,11 +505,7 @@
                 </div>
             </div>
             <div class="player-controls">
-                <button
-                    class="ctrl-btn"
-                    id="btn-prev"
-                    title="Previous"
-                >
+                <button class="ctrl-btn" id="btn-prev" title="Previous">
                     <svg
                         width="20"
                         height="20"
@@ -544,11 +540,7 @@
                         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
                     </svg>
                 </button>
-                <button
-                    class="ctrl-btn"
-                    id="btn-next"
-                    title="Next"
-                >
+                <button class="ctrl-btn" id="btn-next" title="Next">
                     <svg
                         width="20"
                         height="20"
@@ -957,7 +949,7 @@
                 player.addListener('account_error', () => setStatus('error', 'Premium required'));
 
                 // Hook into SDK ready/not_ready to track whether SDK is the active device
-                player.addListener('ready', ({ device_id }) => {
+                player.addListener('ready', async ({ device_id }) => {
                     deviceId = device_id;
                     activeDeviceId = device_id;
                     sdkIsActiveDevice = true;
@@ -968,6 +960,31 @@
                     if (connectBtnLegacy) connectBtnLegacy.style.display = '';
                     const connectBtnH = document.getElementById('btn-spotify-connect-header');
                     if (connectBtnH) connectBtnH.style.display = '';
+
+                    // ── Silent primer ──────────────────────────────────────────────────
+                    // Mobile browsers block audio until the SDK device has actually played
+                    // something. We silently load + immediately pause the first liked song
+                    // at volume 0 so the audio context is activated. The user never hears
+                    // it, but subsequent playSong() calls work on the very first tap.
+                    const primerUri = currentSongs[0]?.uri;
+                    if (primerUri) {
+                        try {
+                            await player.setVolume(0);
+                            await fetch('/spotify/play', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ trackUri: primerUri, deviceId: device_id }),
+                            });
+                            // Give it just enough time to register, then pause and restore volume
+                            setTimeout(async () => {
+                                await player.pause();
+                                await player.setVolume(0.8);
+                            }, 800);
+                        } catch (e) {
+                            // Non-fatal — worst case is the original first-tap issue
+                            await player.setVolume(0.8);
+                        }
+                    }
                 });
 
                 player.addListener('not_ready', () => {
@@ -1451,12 +1468,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
                 });
-                // The SDK won't auto-play on first interaction without an explicit resume()
-                // call from within a user-gesture context. Calling it here (we're already
-                // inside a click handler chain) unblocks it.
-                if (player && activeDeviceId === deviceId) {
-                    await player.resume();
-                }
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
