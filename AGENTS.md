@@ -9,6 +9,12 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   Apple's playlist pages hydrate client-side and strip those meta tags out once their JS finishes
   loading, so waiting for network idle scrapes an already-stripped DOM and silently returns zero
   tracks. Only the initial server-rendered HTML has them.
+- `views/room.ejs` (`playSong`, `togglePlayPause`, `sendPlayRequest`): right after the Spotify Web
+  Playback SDK's `'ready'` event fires, `activeDeviceId` is set client-side, but Spotify's backend
+  can take up to ~1s to finish registering the device — `PUT /me/player/play` briefly 404s
+  ("device not found") even with a valid `device_id`. Any client code calling `/spotify/play` must
+  check the response and retry (see `sendPlayRequest`'s short backoff) instead of firing-and-forgetting
+  the fetch, or a fresh host has to click play multiple times with zero feedback before it works.
 
 ## Maintaining this file
 
