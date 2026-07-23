@@ -71,7 +71,11 @@ const getPlaylistTracks = async (req, res, next) => {
             req.continue();
         });
 
-        await page.goto(targetUrl, { waitUntil: "networkidle2", timeout: 30000 });
+        // domcontentloaded, not networkidle2: Apple's client-side app hydrates over
+        // the initial DOM and strips these meta tags out once its JS finishes loading,
+        // so waiting past hydration finds nothing. The server-rendered HTML already has
+        // everything needed.
+        await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
 
         // ── Parse meta tags ────────────────────────────────────────────────────
         // Apple embeds song URLs in meta tags — attribute names vary but content
