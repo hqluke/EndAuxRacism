@@ -754,6 +754,10 @@ body.drawer-open #guest-panel {
 .btn-play:hover {
     background: var(--green-dim);
 }
+.btn-play:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .btn-queue {
     background: var(--surface2);
     color: var(--muted2);

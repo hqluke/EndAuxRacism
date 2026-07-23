@@ -1198,7 +1198,28 @@
                 player.connect();
             };
 
-            document.getElementById('btn-play-pause').addEventListener('click', () => player?.togglePlay());
+            // Guards the transport play/pause button against the startup race: right
+            // after login the SDK may not have fired 'ready' yet (player/activeDeviceId
+            // still unset), or 'ready' has fired but no track has ever been loaded into
+            // this device yet (togglePlay is a no-op with nothing to toggle). Both cases
+            // used to silently do nothing — now they tell the user why.
+            async function togglePlayPause() {
+                if (!player || !activeDeviceId) {
+                    showToast('Still connecting to Spotify — try again in a moment');
+                    return;
+                }
+                if (!nowPlayingSong) {
+                    showToast('Pick a song to start playing');
+                    return;
+                }
+                try {
+                    await player.togglePlay();
+                } catch (e) {
+                    showToast('Playback control failed — try again');
+                }
+            }
+
+            document.getElementById('btn-play-pause').addEventListener('click', togglePlayPause);
             document.getElementById('btn-prev').addEventListener('click', () => {
                 // More than 5 seconds in — restart current track
                 if (currentPosition > 5000) {
@@ -1535,7 +1556,7 @@
                     const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
                     player.seek(seekTo); currentPosition = seekTo; updateProgress();
                 });
-                document.getElementById('np-modal-btn-play-pause').addEventListener('click', () => player?.togglePlay());
+                document.getElementById('np-modal-btn-play-pause').addEventListener('click', togglePlayPause);
                 document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());
                 document.getElementById('np-modal-btn-next').addEventListener('click', () => document.getElementById('btn-next').click());
                 document.getElementById('np-modal-btn-queue').addEventListener('click', () => {
@@ -1736,9 +1757,28 @@
             // ── Play a track ──────────────────────────────────────────────────────────
             let hasPlayedOnce = false; // tracks whether the SDK has played anything yet
 
+            // Right after the Web Playback SDK's 'ready' event fires, activeDeviceId is
+            // set client-side, but Spotify's backend can take a moment to finish
+            // registering the device — PUT /me/player/play briefly 404s ("device not
+            // found") even though the device_id is valid. A couple of short retries
+            // absorb that instead of silently failing and making the user click again.
+            async function sendPlayRequest(trackUri, targetDeviceId, attempt = 0) {
+                const res = await fetch('/spotify/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trackUri, deviceId: targetDeviceId }),
+                });
+                if (res.ok) return true;
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+                    return sendPlayRequest(trackUri, targetDeviceId, attempt + 1);
+                }
+                return false;
+            }
+
             async function playSong(trackUri, setAutoFromHere = true, skipHistoryPush = false) {
-                if (!isHost) return;
-                if (!activeDeviceId) return alert('Player not ready yet');
+                if (!isHost) return false;
+                if (!activeDeviceId) { showToast('Still connecting to Spotify — try again in a moment'); return false; }
 
                 if (!skipHistoryPush) {
                     const incoming = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri)
@@ -1764,11 +1804,12 @@
                     try { await player.resume(); } catch (e) { /* ignore — not yet playing */ }
                 }
 
-                await fetch('/spotify/play', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trackUri, deviceId: activeDeviceId }),
-                });
+                const ok = await sendPlayRequest(trackUri, activeDeviceId);
+                if (!ok) {
+                    showToast('Playback failed to start — try again');
+                    return false;
+                }
+
                 if (nowPlayingSong?.uri !== trackUri) {
                     const known = [...manualQueue, ...autoQueue, ...currentSongs].find(s => s.uri === trackUri);
                     if (known) { nowPlayingSong = known; renderQueue(); }
@@ -1780,6 +1821,7 @@
                     const ordered = shuffleEnabled ? fisherYates(slice) : slice;
                     socket.emit('queue-set-auto', { roomId, songs: ordered });
                 }
+                return true;
             }
 
 
@@ -2473,7 +2515,15 @@
                         <button class="btn-queue">+ queue</button>
                     </div>
                 `;
-                if (isHost) row.querySelector('.btn-play').addEventListener('click', () => playSong(song.uri, true));
+                if (isHost) row.querySelector('.btn-play').addEventListener('click', async (e) => {
+                    const btn = e.currentTarget;
+                    btn.disabled = true;
+                    try {
+                        await playSong(song.uri, true);
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
                 row.querySelector('.btn-queue').addEventListener('click', () => queueSong(song));
                 return row;
             }
