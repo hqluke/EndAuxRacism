@@ -5,6 +5,12 @@
  * Each room has two queues:
  *   - autoQueue:   songs set when the user hits play (the "up next" list)
  *   - manualQueue: songs explicitly queued by listeners (played first)
+ *
+ * SECURITY NOTE: Tokens (hostToken, refreshToken) are stored as plaintext in
+ * this in-memory Map. This is safe because the data is never persisted to disk
+ * and dies when the process exits. If a session store or database is ever added,
+ * refresh tokens MUST be encrypted at rest (AES-256-GCM with a server-side key)
+ * and access tokens should be kept only in the session cookie (HttpOnly, Secure).
  */
 
 const rooms = new Map();
