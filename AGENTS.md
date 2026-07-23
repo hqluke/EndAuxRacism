@@ -15,6 +15,26 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   ("device not found") even with a valid `device_id`. Any client code calling `/spotify/play` must
   check the response and retry (see `sendPlayRequest`'s short backoff) instead of firing-and-forgetting
   the fetch, or a fresh host has to click play multiple times with zero feedback before it works.
+- `views/room.ejs` library sidebar: `#library-sidebar`'s CSS default (`styles/rooms.css`) is
+  visually *open* at desktop widths (only `.collapsed` hides it) but *hidden* at mobile widths
+  (only `.open` shows it) - the two breakpoints have opposite defaults. Any init logic touching
+  `sidebar.classList` must set explicit `open`/`collapsed` state for both branches, not just
+  mobile, or the DOM class and the visual state (and anything gated on `classList.contains('open')`,
+  like loading playlists) drift apart on desktop.
+- Spotify's `GET /playlists/{id}/items` returns 403 for playlists the user follows but doesn't own
+  or collaborate on - this is documented Spotify API behavior (`playlist-read-private` only covers
+  the *authenticated user's own* playlists), not a missing-scope bug and not something a scope
+  change fixes. `controllers/spotifyController.js` `getPlaylistTracks` passes that status straight
+  through; the frontend in `views/room.ejs` `switchSource()` shows an inline "can't be loaded"
+  message for it rather than erroring.
+- No live Spotify dev credentials in this sandbox (`.env` has dummy client id/secret) - dev/test
+  end-to-end reproduction against real Spotify OAuth or API responses isn't possible here. To
+  reproduce a bug in the room UI, stand up a standalone harness outside the repo that requires the
+  real `routes/`/`controllers/`/`views/` unmodified, swaps in a `req.login()` debug route for the
+  OAuth handshake, and overrides `global.fetch` to fake `api.spotify.com` responses (including a
+  running `socket.io` server - `views/room.ejs` calls `io()` synchronously near the top of its
+  inline script, so a failed socket.io client load throws and no later script in that block runs,
+  including sidebar init).
 
 ## Maintaining this file
 

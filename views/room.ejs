@@ -930,7 +930,6 @@
             let currentSource    = 'liked';
             let currentSongs     = [...allSongs];
             let playlistCache    = {};
-            const forbiddenPlaylists = new Set();
 
             // Infinite scroll state
             let likedOffset    = allSongs.length;
@@ -1852,12 +1851,6 @@
             const libToggle = document.getElementById('btn-library-toggle');
             const backdrop  = document.getElementById('sidebar-backdrop');
 
-            // Start collapsed on mobile
-            if (window.innerWidth <= 768) {
-                sidebar.classList.add('collapsed');
-                libToggle.classList.remove('active');
-            }
-
             function openSidebar() {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.add('open');
@@ -1874,6 +1867,20 @@
             }
 
             let playlistsLoaded = false;
+
+            // Start collapsed on mobile. On desktop the sidebar's CSS default is
+            // already visually open (only `.collapsed` hides it) - without this,
+            // the JS class state stays out of sync with what's on screen and
+            // playlists never fetch until the user happens to toggle the panel.
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('collapsed');
+                libToggle.classList.remove('active');
+            } else {
+                openSidebar();
+                playlistsLoaded = true;
+                loadPlaylists();
+            }
+
             libToggle.addEventListener('click', () => {
                 if (sidebar.classList.contains('open')) {
                     closeSidebar();
@@ -1958,18 +1965,17 @@
                 try {
                     const res = await fetch(`/spotify/playlists/${sourceId}/tracks`);
                     if (!res.ok) {
-                        const body = await res.json().catch(() => ({}));
-                        if (res.status === 403) {
-                            forbiddenPlaylists.add(sourceId);
-                            document.querySelector(`.source-item[data-source="${sourceId}"]`)?.remove();
-                            switchSource('liked', 'Liked Songs');
-                        } else {
-                            document.getElementById('count-label').textContent = 'UNAVAILABLE';
-                            document.getElementById('song-list').innerHTML = `
-                                <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
-                                    This playlist can't be loaded
-                                </div>`;
-                        }
+                        document.getElementById('count-label').textContent = 'UNAVAILABLE';
+                        // Spotify returns 403 for playlists you follow but don't own or
+                        // collaborate on - the API only allows reading tracks from your own
+                        // or collaborative playlists, not arbitrary followed ones.
+                        const message = res.status === 403
+                            ? "Can't be loaded - Spotify only allows reading tracks from playlists you own or collaborate on"
+                            : "This playlist can't be loaded";
+                        document.getElementById('song-list').innerHTML = `
+                            <div style="padding:48px 0;text-align:center;color:var(--muted);font-size:0.8rem;">
+                                ${message}
+                            </div>`;
                         return;
                     }
                     const songs = await res.json();
