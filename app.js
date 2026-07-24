@@ -40,7 +40,11 @@ const sessionMiddleware = session({
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV !== "development",
+        // secure: false because Railway terminates SSL at the proxy and forwards HTTP.
+        // With secure: true, the browser refuses to store the cookie over HTTP.
+        // If deploying behind a reverse proxy that sets X-Forwarded-Proto, add
+        // app.set('trust proxy', 1) and change this to secure: 'auto'.
+        secure: false,
         sameSite: "lax",
     },
 });
