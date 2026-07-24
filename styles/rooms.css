@@ -2368,11 +2368,16 @@ body.drawer-open #player-bar {
     justify-content: center;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .np-modal.open {
     opacity: 1;
     pointer-events: auto;
+}
+@media (min-width: 769px) {
+    body.drawer-open .np-modal.open {
+        margin-right: var(--drawer-w);
+    }
 }
 
 .np-modal-close {
