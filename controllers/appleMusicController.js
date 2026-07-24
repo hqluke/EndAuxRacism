@@ -9,7 +9,16 @@ async function getBrowser() {
     // Launch fresh — previous instance was disconnected or crashed
     browserInstance = await puppeteer.launch({
         headless: "new",
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--no-first-run",
+            "--disable-default-apps",
+        ],
     });
     return browserInstance;
 }
@@ -20,7 +29,32 @@ function extractPlaylistId(url) {
 }
 
 function normaliseUrl(url) {
-    return url.replace(/music\.apple\.com\/[a-z]{2}\//, "music.apple.com/us/");
+    // Strip javascript: protocol attempts, null bytes, and enforce HTTPS
+    return url
+        .replace(/^http:\/\//, "https://")
+        .replace(/music\.apple\.com\/[a-z]{2}\//, "music.apple.com/us/");
+}
+
+function validateAppleMusicUrl(url) {
+    if (typeof url !== "string" || url.length > 500) return false;
+    // Block non-HTTP schemes (javascript:, data:, etc.)
+    if (/^(javascript|data|vbscript|file):/i.test(url)) return false;
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+        if (parsed.hostname !== "music.apple.com") return false;
+        if (!parsed.pathname.includes("/playlist/")) return false;
+        // Reject URLs with suspicious query params or fragments
+        if (parsed.search && parsed.search.length > 1) {
+            const params = [...parsed.searchParams.keys()];
+            // Apple Music playlist URLs should have no query params
+            if (params.length > 0) return false;
+        }
+        if (parsed.hash && parsed.hash.length > 1) return false;
+    } catch {
+        return false;
+    }
+    return true;
 }
 
 // Extract iTunes track ID from Apple Music song URL
@@ -43,8 +77,8 @@ function slugToName(songUrl) {
 const getPlaylistTracks = async (req, res, next) => {
     const { url } = req.body;
 
-    if (!url || !url.includes("music.apple.com")) {
-        return res.status(400).json({ error: "Invalid Apple Music URL" });
+    if (!validateAppleMusicUrl(url)) {
+        return res.status(400).json({ error: "Invalid Apple Music playlist URL" });
     }
 
     const playlistId = extractPlaylistId(url);
