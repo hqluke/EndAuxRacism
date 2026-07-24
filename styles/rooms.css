@@ -59,12 +59,23 @@ header {
 }
 
 .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.32em;
     font-family: "Syne", sans-serif;
     font-weight: 800;
     font-size: 1.3rem;
     letter-spacing: -0.03em;
     color: var(--green);
     text-decoration: none;
+}
+
+.logo-icon {
+    width: 1.15em;
+    height: 1.15em;
+    flex-shrink: 0;
+    display: block;
+    border-radius: 20%;
 }
 
 .host-badge {
