@@ -1025,6 +1025,13 @@
                 }
             });
 
+            // ── Host seek broadcast ─────────────────────────────────────────────
+            socket.on('host-seek', ({ position_ms }) => {
+                if (isHost) return;
+                guestCurrentPosition = position_ms;
+                updateGuestProgress();
+            });
+
             // ── Listener list (long-press) ─────────────────────────────────────────
             socket.on('listener-list', ({ listeners }) => {
                 window._listenerList = listeners || [];
@@ -1630,6 +1637,7 @@
                     const rect   = e.currentTarget.getBoundingClientRect();
                     const seekTo = Math.floor(((e.clientX - rect.left) / rect.width) * currentDuration);
                     player.seek(seekTo); currentPosition = seekTo; updateProgress();
+                    socket.emit('host-seek', { roomId, position_ms: seekTo });
                 });
                 document.getElementById('np-modal-btn-play-pause').addEventListener('click', togglePlayPause);
                 document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());

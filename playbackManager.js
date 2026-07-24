@@ -14,7 +14,7 @@
 const roomManager = require('./roomManager');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const POLL_INTERVAL_MS  = 3000;  // how often we check Spotify
+const POLL_INTERVAL_MS  = 1000;  // how often we check Spotify
 const NEAR_END_MS       = 5000;  // how many ms from end to trigger advance
 const TOKEN_REFRESH_URL = 'https://accounts.spotify.com/api/token';
 

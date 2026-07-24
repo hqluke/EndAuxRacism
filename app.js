@@ -270,6 +270,11 @@ io.on("connection", (socket) => {
         socket.to(roomId).emit("guest-request-back");
     });
 
+    // Relay host seek position to all guests in the room
+    socket.on("host-seek", ({ roomId, position_ms }) => {
+        socket.to(roomId).emit("host-seek", { position_ms });
+    });
+
     // Host broadcasts what's now playing so guests and server stay in sync
     socket.on("now-playing-broadcast", ({ roomId, song }) => {
         roomManager.setNowPlaying(roomId, song);
