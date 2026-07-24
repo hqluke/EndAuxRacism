@@ -83,6 +83,16 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   line detail that does not survive shrinking to real favicon sizes: it stays legible at 512px and is
   still readable at 192px, but at 32px it degrades to a rough blob and at 16px is illegible - a known,
   accepted tradeoff for this asset, not a rendering bug.
+- `views/index.ejs`'s `<h1>` ("EndAuxRacism") is sized with `font-size: clamp(1.15rem, 5.5vw, 3.2rem)`
+  plus a smaller fixed size in the `@media (max-width: 300px)` breakpoint. Both numbers were picked
+  by measuring the rendered word width against the actual available space (viewport minus `body`'s
+  `padding: 24px 20px` minus the h1's own left/right padding) at each target width, not by eyeballing
+  it - "EndAuxRacism" is a single word with `white-space: nowrap` (intentionally, since it must never
+  split across lines), so if a future size bump makes it wider than the available space at some
+  supported width, it will silently clip at the viewport edge instead of wrapping. Re-verify with the
+  same measure-then-size approach (render a hidden span with the h1's font styles and binary-search
+  font sizes against `getBoundingClientRect().width`) before changing these numbers, across the full
+  range from desktop down to the 300px breakpoint.
 
 ## Maintaining this file
 
