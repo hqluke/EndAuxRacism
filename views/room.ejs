@@ -1705,7 +1705,6 @@
                 document.getElementById('np-modal-btn-prev').addEventListener('click', () => document.getElementById('btn-prev').click());
                 document.getElementById('np-modal-btn-next').addEventListener('click', () => document.getElementById('btn-next').click());
                 document.getElementById('np-modal-btn-queue').addEventListener('click', () => {
-                    closeNpModal();
                     openDrawer();
                 });
                 npTap.addEventListener('click', openNpModal);
@@ -1869,7 +1868,6 @@
                 document.getElementById('btn-guest-skip').click();
             });
             document.getElementById('guest-np-modal-btn-queue').addEventListener('click', () => {
-                closeGuestNpModal();
                 openDrawer();
             });
 
