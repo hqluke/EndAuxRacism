@@ -10,6 +10,10 @@ const roomManager = require("./roomManager");
 const playbackManager = require("./playbackManager");
 dotenv.config();
 
+if (!process.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET environment variable is required");
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -30,10 +34,15 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 },
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== "development",
+        sameSite: "lax",
+    },
 });
 
 app.use(sessionMiddleware);
@@ -75,8 +84,8 @@ passport.use(
     ),
 );
 
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user, done) => done(null, user));
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => done(null, { id }));
 
 // ─── App Routes ───────────────────────────────────────────────────────────────
 

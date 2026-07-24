@@ -4,6 +4,25 @@
 const userCache = new Map();
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
 
+// ── Per-user token rate limit ──────────────────────────────────────────────────
+// Prevents abuse: max 10 token requests per minute per user.
+// Keyed by userId → { count, resetAt }
+const tokenRateLimit = new Map();
+const TOKEN_RATE_LIMIT_MAX = 10;
+const TOKEN_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+function checkTokenRateLimit(userId) {
+    const now = Date.now();
+    const entry = tokenRateLimit.get(userId);
+    if (!entry || now > entry.resetAt) {
+        tokenRateLimit.set(userId, { count: 1, resetAt: now + TOKEN_RATE_LIMIT_WINDOW_MS });
+        return true;
+    }
+    if (entry.count >= TOKEN_RATE_LIMIT_MAX) return false;
+    entry.count++;
+    return true;
+}
+
 // ── Request coalescing ─────────────────────────────────────────────────────────
 // Prevents thundering herd: if multiple requests for the same key arrive while
 // a fetch is in-flight, they all share the same promise instead of firing again.
@@ -115,12 +134,19 @@ const getDashboard = async (req, res, next) => {
 
 // Return the access token for the Spotify Web Playback SDK
 const getToken = (req, res) => {
-    console.log(
-        "Token requested, user:",
-        req.user?.id,
-        "token exists:",
-        !!req.user?.accessToken,
-    );
+    const userId = req.user?.id;
+    console.log(`[token] requested user=${userId} at=${new Date().toISOString()}`);
+
+    if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!checkTokenRateLimit(userId)) {
+        console.warn(`[token] rate-limited user=${userId}`);
+        res.set('Retry-After', '60');
+        return res.status(429).json({ error: 'Too many token requests' });
+    }
+
     res.json({ accessToken: req.user.accessToken });
 };
 
