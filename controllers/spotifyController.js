@@ -291,15 +291,19 @@ const getPlaylists = async (req, res, next) => {
                 const data = await response.json();
                 console.log('[playlists] page — total:', data.total, 'items:', data.items?.length, 'next:', data.next);
                 playlists = playlists.concat(
-                    (data.items || []).filter(p => p != null).map(p => ({
-                        id:             p.id,
-                        name:           p.name,
-                        description:    p.description || '',
-                        trackCount:     p.tracks?.total ?? p.items?.total ?? 0,  // Feb 2026: tracks→items
-                        image:          p.images?.[0]?.url || null,
-                        owner:          p.owner?.display_name || '',
-                        isSpotifyOwned: p.owner?.id === 'spotify',
-                    }))
+                    (data.items || [])
+                        .filter(p => p != null)
+                        .filter(p => p.owner?.id === req.user.id || p.collaborative === true)
+                        .map(p => ({
+                            id:             p.id,
+                            name:           p.name,
+                            description:    p.description || '',
+                            trackCount:     p.tracks?.total ?? p.items?.total ?? 0,
+                            image:          p.images?.[0]?.url || null,
+                            owner:          p.owner?.display_name || '',
+                            isSpotifyOwned: p.owner?.id === 'spotify',
+                            collaborative:  !!p.collaborative,
+                        }))
                 );
                 url = data.next || null;
             }
