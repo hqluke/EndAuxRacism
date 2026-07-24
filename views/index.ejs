@@ -4,6 +4,9 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <title>EndAuxRacism</title>
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        <link rel="icon" type="image/png" href="/favicon-32x32.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
             href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap"
@@ -31,6 +34,14 @@
                 gap: 0;
                 text-align: center;
                 overflow-x: hidden;
+            }
+
+            .brand-icon {
+                display: block;
+                width: clamp(40px, 12vw, 72px);
+                height: clamp(40px, 12vw, 72px);
+                margin-bottom: 14px;
+                border-radius: 20%;
             }
 
             h1 {
@@ -92,6 +103,7 @@
             }
 
             @media (max-width: 300px) {
+                .brand-icon { width: 36px; height: 36px; margin-bottom: 10px; }
                 h1 { font-size: 1.2rem; padding: 0 8px; }
                 a.login-btn { padding: 11px 18px; font-size: 0.72rem; }
                 .login-wrap { max-width: 100%; }
@@ -99,6 +111,7 @@
         </style>
     </head>
     <body>
+        <img src="/logo.svg" alt="EndAuxRacism" class="brand-icon" />
         <h1>EndAuxRacism</h1>
         <p class="tagline">let all the dawgs on aux</p>
         <div class="login-wrap">
