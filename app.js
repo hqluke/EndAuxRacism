@@ -153,12 +153,19 @@ app.get("/logout", (req, res, next) => {
 });
 
 
+// ─── Random guest names ─────────────────────────────────────────────────────
+
+function randomJohnName() {
+    const digits = Math.floor(1000 + Math.random() * 9000);
+    return `John${digits}`;
+}
+
 // ─── Socket.io ───────────────────────────────────────────────────────────────
 
 io.on("connection", (socket) => {
     const user = socket.request.session?.passport?.user || null;
     const userId = user?.id || `guest_${socket.id.slice(0, 6)}`;
-    const displayName = user?.displayName || "Guest";
+    const displayName = user?.displayName || randomJohnName();
 
     socket.on("join-room", async (roomId) => {
         socket.join(roomId);
@@ -179,6 +186,9 @@ io.on("connection", (socket) => {
             playbackManager.startPolling(roomId);
         }
 
+        // Track this listener
+        roomManager.addListener(roomId, socket.id, { userId, displayName });
+
         const roomSockets = await io.in(roomId).fetchSockets();
         const listenerCount = roomSockets.length;
         const queueState = roomManager.getQueue(roomId);
@@ -190,8 +200,15 @@ io.on("connection", (socket) => {
         const nowPlaying = roomManager.getNowPlaying(roomId);
         if (nowPlaying) socket.emit("now-playing", nowPlaying);
 
+        // Send full listener list to the joiner
+        const listeners = roomManager.getListeners(roomId);
+        socket.emit("listener-list", { listeners });
+
         socket.to(roomId).emit("user-joined", { userId, displayName, listenerCount });
         io.to(roomId).emit("listener-count", { listenerCount });
+
+        // Broadcast updated listener list to everyone
+        io.to(roomId).emit("listener-list", { listeners });
     });
 
     socket.on("queue-add", ({ roomId, song }) => {
@@ -263,10 +280,16 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", async () => {
         if (socket.currentRoom) {
+            roomManager.removeListener(socket.currentRoom, socket.id);
+
             const roomSockets = await io.in(socket.currentRoom).fetchSockets();
             const listenerCount = roomSockets.length;
             socket.to(socket.currentRoom).emit("user-left", { userId, displayName, listenerCount });
             io.to(socket.currentRoom).emit("listener-count", { listenerCount });
+
+            // Broadcast updated listener list
+            const listeners = roomManager.getListeners(socket.currentRoom);
+            io.to(socket.currentRoom).emit("listener-list", { listeners });
 
             // If the room is now empty, stop polling to save resources
             if (listenerCount === 0) {

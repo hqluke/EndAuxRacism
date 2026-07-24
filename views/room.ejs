@@ -22,7 +22,7 @@
                 <div
                     class="room-id-pill"
                     id="copy-room-link"
-                    title="Copy invite link"
+                    title="Tap to copy invite link / hold to see listeners"
                 >
                     <div class="listener-dot"></div>
                     <span id="listener-label">1 listener</span>
@@ -42,6 +42,10 @@
                             d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
                         />
                     </svg>
+                </div>
+                <div id="listener-list-dropdown" class="listener-dropdown" style="display: none">
+                    <div class="listener-dropdown-title">Listeners</div>
+                    <div id="listener-list-body"></div>
                 </div>
             </div>
 
@@ -1011,16 +1015,87 @@
                 if (el) el.textContent = `${listenerCount} listener${listenerCount === 1 ? '' : 's'}`;
             });
 
+            // ── Progress sync (guests) ────────────────────────────────────────────
+            socket.on('progress-sync', ({ uri, progress_ms, duration_ms }) => {
+                if (isHost) return;
+                if (nowPlayingSong && nowPlayingSong.uri === uri) {
+                    guestCurrentPosition = progress_ms;
+                    guestCurrentDuration = duration_ms;
+                    updateGuestProgress();
+                }
+            });
+
+            // ── Listener list (long-press) ─────────────────────────────────────────
+            socket.on('listener-list', ({ listeners }) => {
+                window._listenerList = listeners || [];
+            });
+
+            (function initListenerLongPress() {
+                const pill = document.getElementById('copy-room-link');
+                const dropdown = document.getElementById('listener-list-dropdown');
+                const body = document.getElementById('listener-list-body');
+                if (!pill || !dropdown || !body) return;
+
+                let holdTimer = null;
+                let didHold = false;
+                const HOLD_MS = 500;
+
+                function showDropdown() {
+                    const list = window._listenerList || [];
+                    body.innerHTML = '';
+                    if (list.length === 0) {
+                        body.innerHTML = '<div class="listener-dropdown-empty">No listeners</div>';
+                    } else {
+                        list.forEach(l => {
+                            const chip = document.createElement('div');
+                            chip.className = 'listener-dropdown-chip';
+                            chip.textContent = l.displayName;
+                            body.appendChild(chip);
+                        });
+                    }
+                    dropdown.style.display = 'block';
+                }
+
+                function hideDropdown() {
+                    dropdown.style.display = 'none';
+                }
+
+                function onStart(e) {
+                    didHold = false;
+                    holdTimer = setTimeout(() => {
+                        didHold = true;
+                        showDropdown();
+                    }, HOLD_MS);
+                }
+
+                function onEnd(e) {
+                    clearTimeout(holdTimer);
+                    if (!didHold) {
+                        navigator.clipboard.writeText(`${window.location.origin}/rooms/${roomId}`)
+                            .then(() => showToast('Invite link copied!'));
+                    }
+                }
+
+                function onCancel() {
+                    clearTimeout(holdTimer);
+                }
+
+                pill.addEventListener('mousedown', onStart);
+                pill.addEventListener('mouseup', onEnd);
+                pill.addEventListener('mouseleave', onCancel);
+                pill.addEventListener('touchstart', onStart, { passive: true });
+                pill.addEventListener('touchend', onEnd);
+                pill.addEventListener('touchcancel', onCancel);
+
+                document.addEventListener('mousedown', (e) => {
+                    if (!dropdown.contains(e.target) && !pill.contains(e.target)) hideDropdown();
+                });
+            })();
+
             // Guest requested back — host executes it on their behalf
             socket.on('guest-request-back', () => {
                 if (!isHost) return;
                 document.getElementById('btn-prev')?.click();
-            });
-
-            // ── Copy invite link ──────────────────────────────────────────────────────
-            document.getElementById('copy-room-link').addEventListener('click', () => {
-                navigator.clipboard.writeText(`${window.location.origin}/rooms/${roomId}`)
-                    .then(() => showToast('Invite link copied!'));
             });
 
             // ── Queue drawer ──────────────────────────────────────────────────────────
