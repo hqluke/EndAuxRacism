@@ -71,6 +71,18 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   width) turned out to be different from the one initially suspected (`.progress-wrap` inside
   `.player-controls`) - that suspected element doesn't even exist in the player bar's real markup,
   it only appears inside the separate now-playing fullscreen modal (`.np-modal-progress`).
+- `public/logo.svg` is the master brand icon: a nested-`<svg>` wrapper pads the source art (non-square,
+  600x449) onto a 600x600 black (`#000000`, matching `manifest.json`'s `background_color`/`theme_color`)
+  square canvas, centered, so favicon/PWA/apple-touch-icon consumers that assume square art still get
+  the full artwork. All raster favicons (`favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`,
+  `icon-512.png`) are generated from this file via `rsvg-convert -w <n> -h <n>` (available on this
+  box; no imagemagick/inkscape SVG rasterization needed). The landing page header in `views/index.ejs`
+  intentionally uses the same padded square asset uncropped rather than the raw 4:3 art - since the
+  page background (`#0a0a0a`) is visually indistinguishable from the pad color, the black margin
+  disappears and only the artwork reads, with no extra CSS cropping required. This source art has fine
+  line detail that does not survive shrinking to real favicon sizes: it stays legible at 512px and is
+  still readable at 192px, but at 32px it degrades to a rough blob and at 16px is illegible - a known,
+  accepted tradeoff for this asset, not a rendering bug.
 
 ## Maintaining this file
 
