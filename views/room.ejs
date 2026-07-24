@@ -13,6 +13,9 @@
             rel="stylesheet"
         />
         <link rel="stylesheet" href="/rooms.css" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     </head>
     <body>
         <header>
@@ -120,6 +123,39 @@
                     >login with spotify</a
                 >
                 <% } %>
+                <button
+                    id="btn-fullscreen"
+                    title="Toggle fullscreen"
+                    style="background:none;border:none;color:inherit;cursor:pointer;padding:6px;display:flex;align-items:center;"
+                >
+                    <svg
+                        id="fs-icon-expand"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                    </svg>
+                    <svg
+                        id="fs-icon-shrink"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        style="display:none"
+                    >
+                        <path d="M4 14h6v6m10-10h-6V4m0 6l7-7M3 21l7-7" />
+                    </svg>
+                </button>
             </div>
         </header>
 
@@ -3005,6 +3041,71 @@
                     document.querySelectorAll('.queue-item.drag-over').forEach(el => el.classList.remove('drag-over'));
                     touchSrc = null; dragSrc = null; dragOverItem = null; isDragging = false;
                 }, { passive: true });
+            })();
+
+            // ── Fullscreen toggle ─────────────────────────────────────────────────────
+            (() => {
+                const btn = document.getElementById('btn-fullscreen');
+                const iconExpand = document.getElementById('fs-icon-expand');
+                const iconShrink = document.getElementById('fs-icon-shrink');
+                if (!btn) return;
+
+                function updateFsUI() {
+                    const isFs = !!document.fullscreenElement;
+                    iconExpand.style.display = isFs ? 'none' : 'block';
+                    iconShrink.style.display = isFs ? 'block' : 'none';
+                    btn.title = isFs ? 'Exit fullscreen' : 'Enter fullscreen';
+                }
+
+                btn.addEventListener('click', () => {
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        document.documentElement.requestFullscreen();
+                    }
+                });
+
+                document.addEventListener('fullscreenchange', () => {
+                    updateFsUI();
+                    const prompt = document.getElementById('fullscreen-prompt');
+                    if (prompt) prompt.style.display = 'none';
+                });
+
+                updateFsUI();
+
+                // First-visit prompt
+                if (!localStorage.getItem('fullscreen-dismissed')) {
+                    const prompt = document.createElement('div');
+                    prompt.id = 'fullscreen-prompt';
+                    prompt.style.cssText = `
+                        position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+                        background:#1a1a1a;color:#e0e0e0;font-family:'DM Mono',monospace;
+                        font-size:0.8rem;padding:10px 16px;border-radius:12px;
+                        display:flex;align-items:center;gap:10px;z-index:250;
+                        box-shadow:0 4px 20px rgba(0,0,0,0.6);border:1px solid #333;
+                    `;
+                    prompt.innerHTML = `
+                        <span>Tap to go fullscreen</span>
+                        <button id="fs-prompt-btn" style="
+                            background:var(--green);color:#000;border:none;border-radius:8px;
+                            padding:4px 12px;font-family:'DM Mono',monospace;font-size:0.75rem;
+                            font-weight:600;cursor:pointer;
+                        ">Go</button>
+                    `;
+                    document.body.appendChild(prompt);
+
+                    document.getElementById('fs-prompt-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        document.documentElement.requestFullscreen();
+                        localStorage.setItem('fullscreen-dismissed', '1');
+                    });
+
+                    // Tap anywhere on prompt to trigger
+                    prompt.addEventListener('click', () => {
+                        document.documentElement.requestFullscreen();
+                        localStorage.setItem('fullscreen-dismissed', '1');
+                    });
+                }
             })();
 
             // ── Helpers ───────────────────────────────────────────────────────────────
