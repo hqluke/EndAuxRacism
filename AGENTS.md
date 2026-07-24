@@ -41,13 +41,36 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - `#player-bar`/`#guest-bar` in `styles/rooms.css` and `styles/dashboard.css` rely on
   `padding-bottom: env(safe-area-inset-bottom, 0px)` for PWA standalone-mode safe-area clearance.
   Any later same-specificity rule for that selector that sets the `padding` *shorthand* (not just
-  `padding-bottom`) silently zeroes this out - happened in `dashboard.css`'s base `#player-bar` rule
-  (fixed) and still happens today in every one of `rooms.css`'s own mobile `@media` breakpoints for
-  `#player-bar, #guest-bar` (768/480/415/360/300-equivalent blocks each re-declare `padding: 0 Npx`
-  with no safe-area term) - so `room.ejs`/guest view currently has the same flush-to-edge bug on an
-  actual notched/gesture-nav phone, it just hasn't been reported yet. Anyone touching those
-  breakpoints should add `padding-bottom: env(safe-area-inset-bottom, 0px)` alongside the shorthand,
-  the same fix applied to `dashboard.css`.
+  `padding-bottom`) silently zeroes this out. This hit both files independently: `dashboard.css`'s
+  base `#player-bar` rule, and every one of `rooms.css`'s mobile `@media` breakpoints (768/415/360/300px)
+  for `#player-bar, #guest-bar`. Both are now fixed the same way: add `padding-bottom:
+  env(safe-area-inset-bottom, 0px)` as the last declaration in the same rule, after the shorthand.
+  To verify this class of bug without a real notched device or a way to fake `env()`'s value
+  (Chrome has no devtools override for safe-area-inset-*), swap the real env name for a guaranteed-
+  unsupported one with a non-zero fallback (e.g. `env(safe-area-inset-bottom, 0px)` ->
+  `env(some-nonexistent-name, 40px)`) in a scratch copy of the CSS, serve it, and read
+  `getComputedStyle(...).paddingBottom` at each breakpoint - the fallback survives if the fix is
+  correct, and collapses to `0px` if a later shorthand is still clobbering it.
+- `views/room.ejs`'s host `#player-bar` (`.now-playing`, `.player-controls`, `.player-bar-right`)
+  overflows horizontally below ~360px viewport width, pushing `.player-bar-right` (the Queue button)
+  off the right edge. Root cause: `.now-playing` gets `width: 180px; flex-shrink: 0;` once at the
+  768px breakpoint and it is *never* reduced at the narrower 415/360/300px breakpoints, unlike every
+  other element in the bar (art size, control gaps, font sizes) which keeps shrinking at each one -
+  so the bar's minimum content width plateaus around ~360px while the viewport keeps shrinking past
+  it. Fixed by adding a `.now-playing { width: ... }` override at each of those three breakpoints so
+  it keeps shrinking in step with the rest of the bar. Also fixed a companion bug found in the same
+  investigation: the 300px breakpoint's `#np-art`/`#guest-np-art` was `60px` - larger than the 360px
+  breakpoint's `32px`, breaking the monotonic 40->36->32 shrink pattern (almost certainly a
+  copy-paste slip) - restored to `28px` to continue the trend. The guest bar (`#guest-np`) was never
+  affected - it uses `flex: 1; min-width: 0; overflow: hidden` instead of a fixed width, so it
+  already shrinks correctly.
+- To find the true content width of a flex bar and confirm/deny an overflow hypothesis, don't trust
+  a hunch about which child is misbehaving - measure directly: `element.scrollWidth - window.innerWidth`
+  for overflow amount, and `getBoundingClientRect()` on each flex child across every breakpoint width,
+  not just one. In this investigation the actual overflowing element (`.now-playing`'s stale fixed
+  width) turned out to be different from the one initially suspected (`.progress-wrap` inside
+  `.player-controls`) - that suspected element doesn't even exist in the player bar's real markup,
+  it only appears inside the separate now-playing fullscreen modal (`.np-modal-progress`).
 
 ## Maintaining this file
 
