@@ -99,6 +99,8 @@ passport.deserializeUser((user, done) => done(null, user));
 
 app.get("/", (req, res) => res.render("index"));
 
+app.get("/faq", (req, res) => res.render("faq"));
+
 // ─── Spotify API Routes (auth required) ──────────────────────────────────────
 
 const spotifyRouter = require("./routes/spotifyRouter");

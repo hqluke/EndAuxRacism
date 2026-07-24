@@ -1,0 +1,134 @@
+/* ============================================================
+   faq.css — FAQ page styles
+   Extends rooms.css (loaded first)
+   ============================================================ */
+
+/* ── Body: FAQ is a plain scrolling page, not the fixed room layout ── */
+body {
+    height: auto;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+header {
+    position: sticky;
+    top: 0;
+}
+
+.faq-main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+}
+
+.faq-intro {
+    margin-bottom: 36px;
+}
+
+.faq-intro h1 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+.faq-intro p {
+    color: var(--muted2);
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+
+.faq-item h2 {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--green);
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.faq-item p {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.faq-item p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-item ul,
+.faq-item ol {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0 0 10px;
+    padding-left: 22px;
+}
+
+.faq-item li {
+    margin-bottom: 4px;
+}
+
+.faq-item strong {
+    color: var(--green);
+}
+
+.faq-note {
+    color: var(--muted2);
+    font-size: 0.8rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 768px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    header { padding: 12px 16px; }
+
+    .faq-main {
+        padding: 32px 16px 48px;
+    }
+
+    .faq-intro h1 {
+        font-size: 1.4rem;
+    }
+
+    .faq-item {
+        padding: 18px 18px;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — 415px
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 415px) {
+    header { padding: 10px 12px; gap: 6px; }
+    .logo { font-size: 1rem; }
+
+    .faq-main {
+        padding: 24px 12px 40px;
+    }
+
+    .faq-intro h1 {
+        font-size: 1.2rem;
+    }
+
+    .faq-item {
+        padding: 16px 14px;
+        border-radius: 12px;
+    }
+
+    .faq-item h2 {
+        font-size: 0.95rem;
+    }
+}
