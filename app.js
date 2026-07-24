@@ -84,8 +84,12 @@ passport.use(
     ),
 );
 
-passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser((id, done) => done(null, { id }));
+// Serialize the full user object (including tokens) into the in-memory session.
+// The session cookie is httpOnly + secure + sameSite=lax, so tokens are protected in transit.
+// If a session store (Redis, DB) is ever added, tokens MUST be excluded from serialization
+// and fetched from encrypted storage instead.
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
 // ─── App Routes ───────────────────────────────────────────────────────────────
 
