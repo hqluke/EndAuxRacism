@@ -92,6 +92,7 @@ main {
     left: 0;
     right: 0;
     padding: 0 32px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
 }
 body.drawer-open #player-bar { right: var(--drawer-w); }
@@ -176,7 +177,7 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 
     .song-meta { display: none; }
 
-    #player-bar { padding: 0 12px; gap: 10px; height: 72px; }
+    #player-bar { padding: 0 12px; gap: 10px; height: 72px; padding-bottom: env(safe-area-inset-bottom, 0px); }
     .now-playing { width: auto; flex: 1; min-width: 0; }
     #np-art { width: 40px; height: 40px; }
     .volume-wrap { display: none; }
@@ -216,7 +217,7 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
     .section-header { flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .header-title-group h1 { font-size: 1.2rem; }
 
-    #player-bar { padding: 0 10px; gap: 8px; height: var(--player-h); }
+    #player-bar { padding: 0 10px; gap: 8px; height: var(--player-h); padding-bottom: env(safe-area-inset-bottom, 0px); }
     #np-art { width: 36px; height: 36px; }
     #np-name { font-size: 0.72rem; }
     #np-artist { font-size: 0.63rem; }
@@ -244,7 +245,7 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
 
     .header-title-group h1 { font-size: 1.1rem; }
 
-    #player-bar { padding: 0 8px; gap: 6px; height: var(--player-h); }
+    #player-bar { padding: 0 8px; gap: 6px; height: var(--player-h); padding-bottom: env(safe-area-inset-bottom, 0px); }
     #np-art { width: 32px; height: 32px; }
     #np-name { font-size: 0.68rem; }
     #np-artist { font-size: 0.6rem; }
@@ -274,7 +275,7 @@ body.drawer-open #player-bar { right: var(--drawer-w); }
     .section-header { gap: 6px; margin-bottom: 8px; }
     .header-title-group h1 { font-size: 1rem; }
 
-    #player-bar { padding: 0 6px; gap: 5px; height: var(--player-h); }
+    #player-bar { padding: 0 6px; gap: 5px; height: var(--player-h); padding-bottom: env(safe-area-inset-bottom, 0px); }
     #np-art { width: 28px; height: 28px; }
     #np-name { font-size: 0.64rem; }
     #np-artist { font-size: 0.58rem; }

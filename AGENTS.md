@@ -34,7 +34,20 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   OAuth handshake, and overrides `global.fetch` to fake `api.spotify.com` responses (including a
   running `socket.io` server - `views/room.ejs` calls `io()` synchronously near the top of its
   inline script, so a failed socket.io client load throws and no later script in that block runs,
-  including sidebar init).
+  including sidebar init). For a bug that's pure CSS/markup (no auth, no live data needed), skip
+  that harness entirely - serve the real `styles/*.css` plus a static-ified copy of the view's body
+  markup from a throwaway static file server instead; it's faithful enough for layout bugs and much
+  cheaper.
+- `#player-bar`/`#guest-bar` in `styles/rooms.css` and `styles/dashboard.css` rely on
+  `padding-bottom: env(safe-area-inset-bottom, 0px)` for PWA standalone-mode safe-area clearance.
+  Any later same-specificity rule for that selector that sets the `padding` *shorthand* (not just
+  `padding-bottom`) silently zeroes this out - happened in `dashboard.css`'s base `#player-bar` rule
+  (fixed) and still happens today in every one of `rooms.css`'s own mobile `@media` breakpoints for
+  `#player-bar, #guest-bar` (768/480/415/360/300-equivalent blocks each re-declare `padding: 0 Npx`
+  with no safe-area term) - so `room.ejs`/guest view currently has the same flush-to-edge bug on an
+  actual notched/gesture-nav phone, it just hasn't been reported yet. Anyone touching those
+  breakpoints should add `padding-bottom: env(safe-area-inset-bottom, 0px)` alongside the shorthand,
+  the same fix applied to `dashboard.css`.
 
 ## Maintaining this file
 
