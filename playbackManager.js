@@ -162,6 +162,15 @@ async function pollTick(roomId) {
         if (_io) _io.to(roomId).emit('now-playing', songData);
     }
 
+    // ── Periodic progress sync for guests ─────────────────────────────────────
+    if (_io) {
+        _io.to(roomId).emit('progress-sync', {
+            uri,
+            progress_ms: pos,
+            duration_ms: duration,
+        });
+    }
+
     // ── Near-end: advance queue and play next song directly ───────────────────
     if (
         playing &&

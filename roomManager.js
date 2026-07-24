@@ -165,6 +165,28 @@ function moveToManualQueue(roomId, fromAutoIndex, toManualIndex) {
     return song;
 }
 
+// ── Listener tracking ────────────────────────────────────────────────────────
+const listeners = new Map(); // roomId → Map<socketId, { userId, displayName }>
+
+function addListener(roomId, socketId, info) {
+    if (!listeners.has(roomId)) listeners.set(roomId, new Map());
+    listeners.get(roomId).set(socketId, info);
+}
+
+function removeListener(roomId, socketId) {
+    const room = listeners.get(roomId);
+    if (room) {
+        room.delete(socketId);
+        if (room.size === 0) listeners.delete(roomId);
+    }
+}
+
+function getListeners(roomId) {
+    const room = listeners.get(roomId);
+    if (!room) return [];
+    return [...room.values()];
+}
+
 module.exports = {
     ensureRoom,
     getQueue,
@@ -183,4 +205,7 @@ module.exports = {
     getRefreshToken,
     setNowPlaying,
     getNowPlaying,
+    addListener,
+    removeListener,
+    getListeners,
 };
